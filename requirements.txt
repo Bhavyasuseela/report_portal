@@ -1,0 +1,7 @@
+django==4.2.29
+gunicorn
+whitenoise
+mysqlclient
+dj-database-url
+Pillow
+cryptography
