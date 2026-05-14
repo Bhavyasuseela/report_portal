@@ -1,0 +1,184 @@
+{% extends 'base.html' %}
+{% block title %}Support — ReportPortal{% endblock %}
+{% block content %}
+
+<!-- ── Page Header with nav tabs ── -->
+<div class="page-header" style="padding-bottom:0;border-bottom:none;">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+    <div>
+      <h1>Support &amp; Help Requests</h1>
+      <p>Need help with your submission? Send a message to the convener — they'll respond by email and here.</p>
+    </div>
+    <a href="{% url 'author_dashboard' %}" class="btn btn-outline btn-sm" style="margin-top:0.5rem;">← My Reports</a>
+  </div>
+  <!-- Tab nav -->
+  <div style="display:flex;gap:0;margin-top:1.5rem;border-bottom:2px solid var(--border);">
+    <a href="{% url 'author_dashboard' %}" style="padding:8px 20px;font-size:0.88rem;font-weight:500;color:var(--text3);text-decoration:none;border-bottom:3px solid transparent;margin-bottom:-2px;"><i class="bi bi-file-earmark-text"></i> My Reports</a>
+    <span style="padding:8px 20px;font-size:0.88rem;font-weight:700;color:#7b35a3;border-bottom:3px solid #7b35a3;margin-bottom:-2px;cursor:default;"><i class="bi bi-life-preserver"></i> Support</span>
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1.4fr;gap:1.5rem;margin-top:1.5rem;align-items:start;">
+
+  <!-- ── LEFT: New Request Form ── -->
+  <div>
+    <div class="card" style="border-left:4px solid #7b35a3;">
+      <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#7b35a3;margin-bottom:1rem;">
+        <i class="bi bi-send"></i> New Support Request
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+
+        <!-- Request type -->
+        <div class="form-group">
+          <label>Request Type <span style="color:var(--coral);">*</span></label>
+          <select name="request_type" id="req-type" onchange="updatePlaceholder()">
+            <option value="time_extension">Request More Time to Submit</option>
+            <option value="submission_issue">Issue While Submitting Report</option>
+            <option value="document_issue">Document / File Issue</option>
+            <option value="review_query">Query About Review Status</option>
+            <option value="general">General Query</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        <!-- Linked report (optional) -->
+        {% if my_reports %}
+        <div class="form-group">
+          <label>Related Report <span style="font-weight:400;color:var(--text3);">(optional)</span></label>
+          <select name="report_id">
+            <option value="">— Not related to a specific report —</option>
+            {% for report in my_reports %}
+            <option value="{{ report.id }}">{{ report.title|truncatechars:60 }} ({{ report.get_status_display }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <!-- Subject -->
+        <div class="form-group">
+          <label>Subject <span style="color:var(--coral);">*</span></label>
+          <input type="text" name="subject" id="req-subject" required
+            placeholder="Brief description of your request..."
+            style="width:100%;box-sizing:border-box;">
+        </div>
+
+        <!-- Message -->
+        <div class="form-group">
+          <label>Message <span style="color:var(--coral);">*</span></label>
+          <textarea name="message" id="req-message" rows="5" required
+            placeholder="Describe your issue or request in detail..."></textarea>
+          <div class="form-hint">Be specific — this helps the convener respond quickly.</div>
+        </div>
+
+        <!-- Info note -->
+        <div style="background:#f3e8fb;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:0.83rem;color:#5a2080;border-left:3px solid #7b35a3;">
+          <i class="bi bi-info-circle"></i> The convener will be notified by email. You'll also receive their response by email and it will appear below.
+        </div>
+
+        <button type="submit" class="btn" style="background:#7b35a3;color:white;width:100%;">
+          <i class="bi bi-send-fill"></i> Submit Support Request
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: My Requests History ── -->
+  <div>
+    <div style="font-size:0.8rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--text3);margin-bottom:0.75rem;">
+      My Requests ({{ my_requests.count }})
+    </div>
+
+    {% if my_requests %}
+    {% for sr in my_requests %}
+    <div class="card" style="margin-bottom:1rem;padding:1rem 1.25rem;border-left:4px solid {% if sr.status == 'open' %}#e67e00{% elif sr.status == 'responded' %}var(--teal){% else %}var(--text3){% endif %};">
+
+      <!-- Header -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;margin-bottom:0.5rem;">
+        <div style="flex:1;">
+          <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.3rem;">
+            <span style="font-size:0.7rem;background:#f3e8fb;color:#7b35a3;padding:2px 8px;border-radius:4px;font-weight:600;">{{ sr.get_request_type_display }}</span>
+            {% if sr.status == 'open' %}
+            <span style="font-size:0.7rem;background:#fff3e0;color:#e67e00;padding:2px 8px;border-radius:4px;font-weight:600;"><i class="bi bi-hourglass-split"></i> Awaiting Response</span>
+            {% elif sr.status == 'responded' %}
+            <span style="font-size:0.7rem;background:#e1f5ee;color:#0f6e56;padding:2px 8px;border-radius:4px;font-weight:600;"><i class="bi bi-check-circle"></i> Responded</span>
+            {% else %}
+            <span style="font-size:0.7rem;background:#f5f5f5;color:#888;padding:2px 8px;border-radius:4px;font-weight:600;"><i class="bi bi-check2-all"></i> Closed</span>
+            {% endif %}
+          </div>
+          <div style="font-weight:600;font-size:0.92rem;">{{ sr.subject }}</div>
+          {% if sr.report %}
+          <div style="font-size:0.75rem;color:var(--text3);margin-top:2px;"><i class="bi bi-file-earmark-text"></i> {{ sr.report.title|truncatechars:50 }}</div>
+          {% endif %}
+        </div>
+        <div style="font-size:0.75rem;color:var(--text3);white-space:nowrap;">{{ sr.created_at|date:"d M Y" }}</div>
+      </div>
+
+      <!-- Author's message -->
+      <details>
+        <summary style="font-size:0.82rem;color:var(--accent);cursor:pointer;"><i class="bi bi-chat-left-text"></i> Your message</summary>
+        <div class="abstract-box" style="margin-top:6px;font-size:0.83rem;">{{ sr.message }}</div>
+      </details>
+
+      <!-- Convener response -->
+      {% if sr.convener_response %}
+      <div style="margin-top:0.75rem;background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:0.75rem 1rem;border-left:3px solid #4caf50;">
+        <div style="font-size:0.72rem;font-weight:700;text-transform:uppercase;color:#2e7d32;margin-bottom:4px;">
+          <i class="bi bi-reply-fill"></i> Convener's Response
+          {% if sr.responded_at %}<span style="font-weight:400;color:#4caf50;"> · {{ sr.responded_at|date:"d M Y" }}</span>{% endif %}
+        </div>
+        <div style="font-size:0.85rem;color:#1b5e20;line-height:1.6;">{{ sr.convener_response }}</div>
+      </div>
+      {% endif %}
+
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="card" style="text-align:center;padding:2rem;">
+      <div style="font-size:2.5rem;color:var(--text3);margin-bottom:0.5rem;"><i class="bi bi-life-preserver"></i></div>
+      <div style="font-weight:600;color:var(--text2);margin-bottom:0.3rem;">No support requests yet</div>
+      <div style="font-size:0.85rem;color:var(--text3);">Use the form on the left to send your first request to the convener.</div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<script>
+function updatePlaceholder() {
+  const type = document.getElementById('req-type').value;
+  const subject = document.getElementById('req-subject');
+  const message = document.getElementById('req-message');
+  const placeholders = {
+    time_extension: { s: 'Requesting extra time to submit my report', m: 'Please describe why you need more time and how much additional time you are requesting...' },
+    submission_issue: { s: 'Having an issue while submitting my report', m: 'Please describe the error or issue you are facing (include error messages if any)...' },
+    document_issue: { s: 'Document / file upload issue', m: 'Please describe the document issue — e.g. file format, size, upload error...' },
+    review_query: { s: 'Query about review status of my report', m: 'Please mention the report title and your query about its review status...' },
+    general: { s: 'General query', m: 'Please describe your query in detail...' },
+    other: { s: 'Other request', m: 'Please describe your request in detail...' },
+  };
+  const p = placeholders[type] || placeholders.general;
+  subject.placeholder = p.s;
+  message.placeholder = p.m;
+}
+updatePlaceholder();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Submitting...';
+      });
+    });
+  });
+});
+</script>
+
+{% endblock %}

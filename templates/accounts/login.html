@@ -1,0 +1,184 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign In — Internal Report Submission Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+
+<!-- Bootstrap Icons -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+
+<style>
+:root {
+  --bg: #f4f2ee; --surface: #fff; --border: #e8e4de; --border2: #d4cfc8;
+  --text: #1a1916; --text2: #6b6760; --text3: #9c9890;
+  --accent: #2d5a8e; --accent-light: #e8f0fb; --accent-dark: #1e3f66;
+  --green: #3b6d11; --red: #a32d2d;
+  --radius: 12px; --radius-lg: 20px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ── NCMRWF Government Top Bar ── */
+.gov-topbar {
+  background: #ffffff;
+  border-bottom: 3px solid #1e3f66;
+  padding: 8px 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.gov-topbar-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  text-align: center;
+}
+.gov-topbar-left img, .gov-topbar-right img {
+  height: 64px;
+  object-fit: contain;
+}
+.gov-topbar-logos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gov-title-hi {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e3f66;
+  font-family: 'Noto Sans Devanagari', 'DM Sans', sans-serif;
+  line-height: 1.3;
+}
+.gov-title-en {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e3f66;
+  letter-spacing: 0.01em;
+  line-height: 1.3;
+}
+.gov-subtitle-hi {
+  font-size: 0.8rem;
+  color: #444;
+  margin-top: 2px;
+}
+.gov-subtitle-en {
+  font-size: 0.78rem;
+  color: #555;
+}
+.gov-emblem {
+  height: 64px;
+  object-fit: contain;
+}
+@media (max-width: 640px) {
+  .gov-topbar { flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .gov-topbar-left, .gov-topbar-right { display: none; }
+  .gov-title-en { font-size: 0.85rem; }
+}
+
+.header { background: linear-gradient(135deg, #1e3f66 0%, #2d5a8e 60%, #0f6e56 100%); padding: 2.2rem 2rem 2rem; text-align: center; }
+.brand { font-family: 'Playfair Display', serif; font-size: 2.4rem; color: white; margin-bottom: 0.6rem; }
+.brand span { color: #9fe1cb; }
+.tagline { color: rgba(255,255,255,0.75); font-size: 1rem; }
+.main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 3rem 1.5rem; }
+.choose-label { font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 1.8rem; }
+.role-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1.2rem; width: 100%; max-width: 1100px; }
+@media (max-width: 1000px) { .role-grid { grid-template-columns: repeat(3, 1fr); max-width: 680px; } }
+@media (max-width: 640px) { .role-grid { grid-template-columns: repeat(2, 1fr); max-width: 420px; } }
+@media (max-width: 380px) { .role-grid { grid-template-columns: repeat(1, 1fr); max-width: 300px; } }
+.role-card {
+  background: var(--surface); border: 1.5px solid var(--border2); border-radius: var(--radius-lg);
+  padding: 2rem 1.5rem; text-align: center; text-decoration: none; color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+}
+.role-card:hover { border-color: var(--accent); box-shadow: 0 4px 20px rgba(45,90,142,0.12); transform: translateY(-2px); }
+.role-icon { font-size: 2.4rem; }
+.role-name { font-weight: 600; font-size: 1.05rem; }
+.role-desc { font-size: 0.8rem; color: var(--text3); line-height: 1.5; }
+.role-card.author { border-top: 3px solid #2d5a8e; }
+.role-card.convener { border-top: 3px solid #0f6e56; }
+.role-card.reviewer { border-top: 3px solid #b36000; }
+.role-card.librarian { border-top: 3px solid #7b35a3; }
+.role-card.head { border-top: 3px solid #1e3f66; }
+
+</style>
+</head>
+
+<body>
+
+<div class="gov-topbar">
+  <div class="gov-topbar-left">
+    <img src="{% static 'images/emblem_logo.png' %}" alt="Government Logo">
+  </div>
+
+  <div class="gov-topbar-center">
+    <div class="gov-title-hi">राष्ट्रीय मध्यम अवधि मौसम पूर्वानुमान केंद्र</div>
+    <div class="gov-title-en">National Centre For Medium Range Weather Forecasting</div>
+    <div class="gov-subtitle-hi">पृथ्वी विज्ञान मंत्रालय, भारत सरकार</div>
+    <div class="gov-subtitle-en">Ministry of Earth Sciences, Government of India</div>
+  </div>
+
+  <div class="gov-topbar-right">
+    <div class="gov-topbar-logos">
+      <img src="{% static 'images/ncmrwf_logo.png' %}" alt="NCMRWF Logo">
+      <img src="{% static 'images/ai_image.png' %}" alt="AI Logo">
+    </div>
+  </div>
+</div>
+
+<div class="header">
+  <div class="brand">Internal Report <span>Submission Portal</span></div>
+  <p class="tagline">Secure internal platform for managing academic and technical reports</p>
+</div>
+
+<div class="main">
+  <p class="choose-label">Select your role to sign in</p>
+
+  <div class="role-grid">
+    <a href="{% url 'login_author' %}" class="role-card author">
+      <div class="role-icon"><i class="bi bi-pencil-square"></i></div>
+      <div class="role-name">Author</div>
+      <div class="role-desc">Submit and track your research papers</div>
+
+    </a>
+
+    <a href="{% url 'login_convener' %}" class="role-card convener">
+      <div class="role-icon"><i class="bi bi-folder2-open"></i></div>
+      <div class="role-name">Convener</div>
+      <div class="role-desc">Assign reviewers and manage submissions</div>
+    </a>
+
+    <a href="{% url 'login_reviewer' %}" class="role-card reviewer">
+      <div class="role-icon"><i class="bi bi-search"></i></div>
+      <div class="role-name">Reviewer</div>
+      <div class="role-desc">Review assigned papers and submit feedback</div>
+    </a>
+
+    <a href="{% url 'login_librarian' %}" class="role-card librarian">
+      <div class="role-icon"><i class="bi bi-book"></i></div>
+      <div class="role-name">Librarian</div>
+      <div class="role-desc">Access and manage accepted publications</div>
+    </a>
+
+    <a href="{% url 'login_head' %}" class="role-card head">
+      <div class="role-icon"><i class="bi bi-person-badge"></i></div>
+      <div class="role-name">Head</div>
+      <div class="role-desc">Final approval and library forwarding</div>
+    </a>
+  </div>
+
+  <div style="text-align:center;margin-top:2rem;">
+    <a href="{% url 'login_admin' %}" style="display:inline-flex;align-items:center;gap:.4rem;color:#64748b;font-size:.82rem;text-decoration:none;padding:.4rem .9rem;border:1px solid #334155;border-radius:8px;transition:.2s;" onmouseover="this.style.background='#1e293b';this.style.color='#94a3b8'" onmouseout="this.style.background='transparent';this.style.color='#64748b'">
+      <i class="bi bi-shield-lock"></i> Admin Login
+    </a>
+  </div>
+</div>
+
+</body>
+</html>

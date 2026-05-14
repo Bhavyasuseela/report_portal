@@ -1,0 +1,167 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Author Registration — Internal Report Submission Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+<style>
+:root {
+  --bg: #f4f2ee; --surface: #fff; --border: #e8e4de; --border2: #d4cfc8;
+  --text: #1a1916; --text2: #6b6760; --text3: #9c9890;
+  --accent: #2d5a8e; --accent-light: #e8f0fb; --accent-dark: #1e3f66;
+  --green: #3b6d11; --green-light: #eaf3de; --red: #a32d2d; --red-light: #fcebeb;
+  --role-color: #2d5a8e; --role-light: #e8f0fb;
+  --role-gradient: linear-gradient(145deg,#1e3f66,#2d5a8e);
+  --radius: 10px; --radius-lg: 16px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+.gov-topbar { background: #fff; border-bottom: 3px solid #1e3f66; padding: 8px 2rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 8px rgba(0,0,0,0.08); flex-shrink: 0; }
+.gov-topbar-center { display: flex; flex-direction: column; align-items: center; flex: 1; text-align: center; }
+.gov-topbar-logos { display: flex; align-items: center; gap: 8px; }
+.gov-title-hi  { font-size: 1.1rem; font-weight: 700; color: #1e3f66; line-height: 1.3; }
+.gov-title-en  { font-size: 1rem; font-weight: 700; color: #1e3f66; line-height: 1.3; }
+.gov-subtitle-hi { font-size: 0.78rem; color: #444; margin-top: 2px; }
+.gov-subtitle-en { font-size: 0.76rem; color: #555; }
+@media (max-width: 640px) { .gov-topbar { flex-wrap: wrap; gap: 8px; justify-content: center; } .gov-topbar-left, .gov-topbar-right { display: none; } }
+
+.split { display: grid; grid-template-columns: 1fr 1fr; flex: 1; width: 100%; min-height: calc(100vh - 100px); }
+.left-panel { background: var(--role-gradient); display: flex; flex-direction: column; justify-content: center; padding: 4rem; position: relative; overflow: hidden; }
+.left-panel::before { content: ''; position: absolute; top: -100px; right: -100px; width: 400px; height: 400px; border-radius: 50%; background: rgba(255,255,255,0.06); }
+.left-panel::after  { content: ''; position: absolute; bottom: -80px; left: -80px; width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,0.04); }
+.brand      { font-family: 'Playfair Display', serif; font-size: 1.4rem; color: rgba(255,255,255,0.9); margin-bottom: 0.5rem; }
+.role-hero  { font-size: 3.5rem; margin-bottom: 0.75rem; }
+.role-title { font-family: 'Playfair Display', serif; font-size: 2rem; color: #fff; margin-bottom: 0.75rem; text-shadow: 0 1px 6px rgba(0,0,0,0.25); }
+.role-desc  { color: rgba(255,255,255,0.95); font-size: 1rem; line-height: 1.75; max-width: 320px; }
+.features   { margin-top: 2.5rem; display: flex; flex-direction: column; gap: 0.85rem; }
+.feature    { display: flex; align-items: center; gap: 12px; color: #fff; font-size: 0.92rem; font-weight: 500; }
+.feature-dot{ width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.95); flex-shrink: 0; }
+
+.right-panel { display: flex; align-items: center; justify-content: center; padding: 2rem; background: var(--bg); }
+.login-box   { width: 100%; max-width: 420px; }
+.back-link   { display: inline-flex; align-items: center; gap: 6px; font-size: 0.82rem; color: var(--text3); margin-bottom: 1.5rem; text-decoration: none; transition: color 0.2s; }
+.back-link:hover { color: var(--role-color); }
+.role-badge  { display: inline-flex; align-items: center; gap: 8px; background: var(--role-light); color: var(--role-color); padding: 5px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 1rem; }
+.login-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 0.4rem; color: var(--text); }
+.login-sub   { color: var(--text2); font-size: 0.92rem; margin-bottom: 1.75rem; }
+.form-group  { margin-bottom: 1.2rem; }
+label { display: block; font-size: 0.78rem; font-weight: 600; color: var(--text2); margin-bottom: 0.4rem; text-transform: uppercase; letter-spacing: 0.05em; }
+input { width: 100%; padding: 11px 14px; border: 1.5px solid var(--border2); border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 0.95rem; background: var(--surface); color: var(--text); outline: none; transition: border 0.2s; }
+input:focus { border-color: var(--role-color); box-shadow: 0 0 0 3px var(--role-light); }
+.btn-login   { width: 100%; padding: 12px; background: var(--role-color); color: white; border: none; border-radius: var(--radius); font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 500; cursor: pointer; transition: opacity 0.2s; margin-top: 0.5rem; }
+.btn-login:hover { opacity: 0.88; }
+.messages { margin-bottom: 1.25rem; }
+.message  { padding: 10px 14px; border-radius: var(--radius); font-size: 0.875rem; margin-bottom: 7px; }
+.message-success { background: var(--green-light); color: var(--green); border: 1px solid #c0dd97; }
+.message-error   { background: var(--red-light); color: var(--red); border: 1px solid #f7c1c1; }
+.note { font-size: 0.8rem; color: var(--text3); margin-top: 1.25rem; text-align: center; line-height: 1.6; }
+@media (max-width: 768px) {
+  .split { grid-template-columns: 1fr; }
+  .left-panel { padding: 2.5rem 2rem; min-height: 220px; justify-content: flex-start; }
+  .role-hero { font-size: 2.5rem; }
+  .role-title { font-size: 1.5rem; }
+}
+</style>
+</head>
+<body>
+
+<div class="gov-topbar">
+  <div class="gov-topbar-left">
+    <img src="{% static 'images/emblem_logo.png' %}" height="62">
+  </div>
+  <div class="gov-topbar-center">
+    <div class="gov-title-hi">राष्ट्रीय मध्यम अवधि मौसम पूर्वानुमान केंद्र</div>
+    <div class="gov-title-en">National Centre For Medium Range Weather Forecasting</div>
+    <div class="gov-subtitle-hi">पृथ्वी विज्ञान मंत्रालय, भारत सरकार</div>
+    <div class="gov-subtitle-en">Ministry of Earth Sciences, Government of India</div>
+  </div>
+  <div class="gov-topbar-right">
+    <div class="gov-topbar-logos">
+      <img src="{% static 'images/ncmrwf_logo.png' %}" height="58">
+      <img src="{% static 'images/ai_image.png' %}" height="58">
+    </div>
+  </div>
+</div>
+
+<div class="split">
+  <div class="left-panel">
+    <div class="brand">Internal Report Submission Portal</div>
+    <div class="role-hero"><i class="bi bi-pencil-square"></i></div>
+    <div class="role-title">Author Registration</div>
+    <div class="role-desc">Create your author account to start submitting and tracking your research papers through the full peer-review process.</div>
+    <div class="features">
+      <div class="feature"><span class="feature-dot"></span>Submit technical & research reports</div>
+      <div class="feature"><span class="feature-dot"></span>Track review status in real time</div>
+      <div class="feature"><span class="feature-dot"></span>Receive email notifications</div>
+      <div class="feature"><span class="feature-dot"></span>Resubmit after reviewer feedback</div>
+    </div>
+  </div>
+
+  <div class="right-panel">
+    <div class="login-box">
+      <a href="{% url 'login_author' %}" class="back-link">← Back to Author Login</a>
+
+      <div class="role-badge"><i class="bi bi-person-plus"></i> New Author</div>
+
+      <h1 class="login-title">Create Account</h1>
+      <p class="login-sub">Register to submit and track your reports.</p>
+
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+        <div class="message message-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <form method="POST">
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 1rem;">
+          <div class="form-group">
+            <label>First Name <span style="color:#e74c3c;">*</span></label>
+            <input type="text" name="first_name" placeholder="First name" required autofocus>
+          </div>
+          <div class="form-group">
+            <label>Last Name <span style="color:#e74c3c;">*</span></label>
+            <input type="text" name="last_name" placeholder="Last name" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Designation</label>
+          <input type="text" name="designation" placeholder="e.g. Scientist-C, Research Associate">
+        </div>
+        <div class="form-group">
+          <label>Department</label>
+          <input type="text" name="department" placeholder="e.g. Monsoon Research Division">
+        </div>
+        <div class="form-group">
+          <label>Email Address <span style="color:#e74c3c;">*</span></label>
+          <input type="email" name="email" placeholder="yourname@example.com" required>
+          <small style="color:#888;font-size:0.82em;">Any valid email address is accepted. Admin authentication/approval is required before you can log in.</small>
+        </div>
+        <div class="form-group">
+          <label>Password <span style="color:#e74c3c;">*</span></label>
+          <input type="password" name="password" placeholder="At least 6 characters" required>
+        </div>
+        <div class="form-group">
+          <label>Confirm Password <span style="color:#e74c3c;">*</span></label>
+          <input type="password" name="confirm_password" placeholder="Re-enter your password" required>
+        </div>
+        <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:0.83rem;color:#92400e;">
+          <i class="bi bi-shield-exclamation"></i> <strong>Admin Approval Required:</strong> After registration, an administrator must approve your account before you can log in and submit reports.
+        </div>
+        <button type="submit" class="btn-login">Register →</button>
+      </form>
+
+      <p class="note">Already have an account? <a href="{% url 'login_author' %}" style="color:var(--role-color);font-weight:600;">Sign in here</a></p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

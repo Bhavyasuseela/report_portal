@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Head Dashboard — ReportPortal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Head Dashboard</h1>
+  <p>Welcome, V.S. Prasad. Review papers forwarded for final approval and send approved papers to the library.</p>
+</div>
+
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));">
+  <div class="stat-card" style="border-top:3px solid #1e3f66;">
+    <div class="stat-num" style="color:#1e3f66;">{{ stats.pending_approval }}</div>
+    <div class="stat-label">Awaiting Your Approval</div>
+  </div>  <div class="stat-card" style="border-top:3px solid var(--coral,#e05a3a);">
+    <div class="stat-num" style="color:var(--coral,#e05a3a);">{{ stats.sent_back }}</div>
+    <div class="stat-label">Sent Back for Changes</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-num">{{ stats.approved }}</div>
+    <div class="stat-label">Approved Papers</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid #7b35a3;">
+    <div class="stat-num" style="color:#7b35a3;">{{ stats.sent_to_library }}</div>
+    <div class="stat-label">Sent to Library</div>
+  </div>
+</div>
+
+<!-- Pending Approval Alert -->
+{% if stats.pending_approval > 0 %}
+<div style="background:#eef2fb;border:1px solid #b8c8f0;border-left:4px solid #1e3f66;border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <i class="bi bi-person-badge-fill" style="font-size:1.4rem;color:#1e3f66;"></i>
+    <div>
+      <strong style="color:#1e3f66;">{{ stats.pending_approval }} paper{{ stats.pending_approval|pluralize }} awaiting your final approval</strong>
+      <div style="font-size:0.85rem;color:#1a3a6e;">Papers reviewed and confirmed by the convener — please approve or send back.</div>
+    </div>
+  </div>
+  <a href="?status=pending_head_approval" class="btn btn-sm" style="background:#1e3f66;color:white;white-space:nowrap;">Review Now</a>
+</div>
+{% endif %}
+
+<!-- Approved — Ready for Library Alert -->
+{% if stats.approved > 0 %}
+<div style="background:#e1f5ee;border:1px solid #a8dcc8;border-left:4px solid #0f6e56;border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <i class="bi bi-book-fill" style="font-size:1.4rem;color:#0f6e56;"></i>
+    <div>
+      <strong style="color:#0f6e56;">{{ stats.approved }} approved paper{{ stats.approved|pluralize }} ready to send to Library</strong>
+      <div style="font-size:0.85rem;color:#0a4e3d;">Use the Send to Library button on each approved paper.</div>
+    </div>
+  </div>
+  <a href="?status=accepted" class="btn btn-sm" style="background:#0f6e56;color:white;white-space:nowrap;">View Approved</a>
+</div>
+{% endif %}
+
+<!-- Filters -->
+<form method="get" class="filter-bar">
+  <select name="status" onchange="this.form.submit()">
+    <option value="">All Papers</option>
+    <option value="pending_head_approval" {% if status_filter == 'pending_head_approval' %}selected{% endif %}>Awaiting Approval</option>
+    <option value="head_sent_back" {% if status_filter == 'head_sent_back' %}selected{% endif %}>Sent Back for Changes</option>
+    <option value="accepted" {% if status_filter == 'accepted' %}selected{% endif %}>Approved</option>
+  </select>
+  <select name="type" onchange="this.form.submit()">
+    <option value="">All Types</option>
+    <option value="technical" {% if type_filter == 'technical' %}selected{% endif %}>Technical</option>
+    <option value="verification" {% if type_filter == 'verification' %}selected{% endif %}>Verification</option>
+    <option value="research" {% if type_filter == 'research' %}selected{% endif %}>Research</option>
+  </select>
+  {% if status_filter or type_filter %}
+  <a href="{% url 'head_dashboard' %}" class="btn btn-outline btn-sm">Clear filters</a>
+  {% endif %}
+</form>
+
+<div class="card">
+  {% if reports %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Report</th>
+          <th>Author</th>
+          <th>Type</th>
+          <th>Submitted</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+        <tr {% if report.status == 'pending_head_approval' %}style="background:#f5f7fd;"{% elif report.status == 'head_sent_back' %}style="background:#fff8f5;"{% endif %}>
+          <td style="max-width:260px;">
+            <strong style="font-size:0.92rem;display:block;">{{ report.title|truncatechars:70 }}</strong>
+            <div style="font-size:0.78rem;color:var(--text3);margin-top:3px;">{{ report.keywords|truncatechars:50 }}</div>
+            {% if report.resubmission_count > 0 %}
+            <div style="font-size:0.74rem;color:#7b35a3;margin-top:3px;font-weight:500;">
+              <i class="bi bi-arrow-repeat"></i> {{ report.resubmission_count }} resubmission{{ report.resubmission_count|pluralize }}
+            </div>
+            {% endif %}
+            {% if report.final_report_doc %}
+            <div style="font-size:0.74rem;color:#0f6e56;margin-top:3px;font-weight:500;">
+              <i class="bi bi-file-earmark-check"></i> Final report submitted
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-size:0.9rem;">{{ report.author_name }}</div>
+            <div style="font-size:0.78rem;color:var(--text3);">{{ report.author.email }}</div>
+          </td>
+          <td><span class="badge badge-blue">{{ report.get_report_type_display }}</span></td>
+          <td style="font-size:0.85rem;color:var(--text2);white-space:nowrap;">
+            {{ report.submitted_at|date:"d M Y" }}
+            {% if report.sent_to_head_at %}
+            <div style="font-size:0.75rem;color:#1e3f66;margin-top:2px;"><i class="bi bi-arrow-right"></i> Sent {{ report.sent_to_head_at|date:"d M Y" }}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if report.status == 'pending_head_approval' %}
+              <span class="badge" style="background:#eef2fb;color:#1e3f66;"><span class="badge-dot" style="background:#1e3f66;"></span>Awaiting Approval</span>
+            {% elif report.status == 'head_sent_back' %}
+              <span class="badge badge-coral"><span class="badge-dot"></span>Sent Back</span>
+            {% elif report.status == 'accepted' %}
+              {% if report.sent_to_library_at %}
+                <span class="badge badge-green"><span class="badge-dot"></span>In Library</span>
+              {% else %}
+                <span class="badge badge-green"><span class="badge-dot"></span>Approved</span>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              {% if report.status == 'pending_head_approval' %}
+                <a href="{% url 'head_review_report' report.id %}" class="btn btn-sm" style="background:#1e3f66;color:white;">
+                  Review
+                </a>
+              {% elif report.status == 'accepted' %}
+                {% if report.sent_to_library_at %}
+                  <button class="btn btn-sm" disabled style="background:#f5f5f5;color:#aaa;border:1px solid #ddd;cursor:not-allowed;" title="Sent to library on {{ report.sent_to_library_at|date:'d M Y' }}">
+                    <i class="bi bi-check-circle"></i> Sent
+                  </button>
+                {% else %}
+                  <a href="{% url 'head_send_to_library' report.id %}" class="btn btn-sm" style="background:#0f6e56;color:white;">
+                    <i class="bi bi-book"></i> Send to Library
+                  </a>
+                {% endif %}
+              {% elif report.status == 'head_sent_back' %}
+                <span style="font-size:0.8rem;color:var(--text3);font-style:italic;">Awaiting convener action</span>
+              {% endif %}
+              {% if report.final_report_doc %}
+              <a href="{% encrypted_file_url report.final_report_doc %}" target="_blank" class="btn btn-sm" title="Download Final Report" style="background:#e1f5ee;color:#0f6e56;border:1px solid #a8dcc8;">
+                <i class="bi bi-file-earmark-check"></i> Final
+              </a>
+              {% else %}
+              <a href="{% encrypted_file_url report.get_active_paper_doc %}" target="_blank" class="btn btn-outline btn-sm" title="Download Paper">
+                <i class="bi bi-file-earmark-arrow-down"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-inbox" style="font-size:2.5rem;color:var(--text3);"></i></div>
+    <h3>No papers found</h3>
+    <p>Papers forwarded by the convener for final approval will appear here.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

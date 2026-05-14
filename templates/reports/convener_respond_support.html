@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}Respond to Support Request — ReportPortal{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <a href="{% url 'convener_support_inbox' %}" style="font-size:0.85rem;color:var(--text3);">← Support Inbox</a>
+  <h1 style="margin-top:0.5rem;">Respond to Support Request</h1>
+</div>
+
+<div style="max-width:800px;display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;">
+
+  <!-- Left: Request details -->
+  <div>
+    <div class="card" style="margin-bottom:1rem;">
+      <div class="card-title">Request Details</div>
+      <div style="display:flex;flex-direction:column;gap:0.65rem;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Type</div>
+          <span style="font-size:0.82rem;background:#f3e8fb;color:#7b35a3;padding:2px 8px;border-radius:4px;font-weight:600;">{{ sr.get_request_type_display }}</span>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Subject</div>
+          <div style="font-weight:600;">{{ sr.subject }}</div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">From</div>
+          <div>{{ sr.author.get_full_name|default:sr.author.email }}</div>
+          <div style="font-size:0.78rem;color:var(--text3);">{{ sr.author.email }}</div>
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Submitted</div>
+          <div style="font-size:0.85rem;">{{ sr.created_at|date:"d M Y, H:i" }}</div>
+        </div>
+        {% if sr.report %}
+        <div>
+          <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Linked Report</div>
+          <div style="font-size:0.85rem;font-weight:500;">{{ sr.report.title }}</div>
+          <div style="font-size:0.75rem;color:var(--text3);">Status: {{ sr.report.get_status_display }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card" style="border-left:4px solid #7b35a3;">
+      <div class="card-title" style="color:#7b35a3;"><i class="bi bi-chat-left-quote"></i> Author's Message</div>
+      <div class="abstract-box" style="border-left-color:#7b35a3;font-size:0.88rem;line-height:1.7;">{{ sr.message }}</div>
+    </div>
+
+    {% if sr.convener_response %}
+    <div class="card" style="margin-top:1rem;border-left:4px solid var(--teal);">
+      <div class="card-title" style="color:var(--teal);"><i class="bi bi-reply-fill"></i> Previous Response</div>
+      <div class="abstract-box" style="border-left-color:var(--teal);font-size:0.86rem;">{{ sr.convener_response }}</div>
+      <div style="font-size:0.75rem;color:var(--text3);margin-top:6px;">Responded {{ sr.responded_at|date:"d M Y" }} by {{ sr.responded_by.get_full_name|default:sr.responded_by.email }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Response form -->
+  <div class="card">
+    <div class="card-title">Your Response</div>
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Response Message <span style="color:var(--coral);">*</span></label>
+        <textarea name="response" rows="7" required
+          placeholder="Type your response to the author here...">{% if sr.convener_response %}{{ sr.convener_response }}{% endif %}</textarea>
+        <div class="form-hint">The author will receive this response by email.</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:0.6rem;margin-bottom:1.25rem;">
+        <label style="display:flex;align-items:flex-start;gap:0.5rem;cursor:pointer;padding:10px 12px;border:2px solid var(--border);border-radius:8px;" id="lbl-respond">
+          <input type="radio" name="action" value="respond" checked style="margin-top:3px;" onchange="highlightAction()">
+          <span>
+            <strong style="color:var(--teal);">Respond — Keep Open</strong>
+            <div style="font-size:0.78rem;color:var(--text3);">Send response, mark as "Responded" (author can follow up)</div>
+          </span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:0.5rem;cursor:pointer;padding:10px 12px;border:2px solid var(--border);border-radius:8px;" id="lbl-close">
+          <input type="radio" name="action" value="close" style="margin-top:3px;" onchange="highlightAction()">
+          <span>
+            <strong style="color:var(--text2);">Respond &amp; Close</strong>
+            <div style="font-size:0.78rem;color:var(--text3);">Send response and mark as "Closed" (no further action needed)</div>
+          </span>
+        </label>
+      </div>
+
+      <div style="display:flex;gap:0.75rem;">
+        <button type="submit" class="btn btn-teal">Send Response</button>
+        <a href="{% url 'convener_support_inbox' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+function highlightAction() {
+  const respond = document.querySelector('input[value="respond"]').checked;
+  document.getElementById('lbl-respond').style.borderColor = respond ? 'var(--teal)' : 'var(--border)';
+  document.getElementById('lbl-close').style.borderColor = !respond ? 'var(--accent)' : 'var(--border)';
+}
+highlightAction();
+</script>
+
+{% endblock %}

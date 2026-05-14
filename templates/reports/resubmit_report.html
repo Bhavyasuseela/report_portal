@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Resubmit Paper — ReportPortal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'author_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Resubmit Revised Paper</h1>
+  <p>Upload your revised paper along with a note explaining what changes you made.</p>
+</div>
+
+<!-- Reviewer Feedback Banner -->
+<div style="background:var(--coral-light);border:1px solid #f0c0b0;border-left:4px solid var(--coral);border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:2rem;max-width:760px;">
+  <div style="font-size:0.78rem;font-weight:600;color:var(--coral);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem;"><i class="bi bi-pencil-square"></i> Reviewer Feedback — Action Required</div>
+  <div style="font-size:0.92rem;color:var(--text);line-height:1.7;">{{ report.reviewer_feedback|default:"The reviewer has requested revisions. Please check with your convener for details." }}</div>
+  {% if report.reviewed_at %}
+  <div style="font-size:0.8rem;color:var(--text3);margin-top:0.6rem;">Reviewed on {{ report.reviewed_at|date:"d M Y, H:i" }}</div>
+  {% endif %}
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1.4fr;gap:1.5rem;align-items:start;max-width:960px;">
+
+  <!-- Paper Info -->
+  <div class="card">
+    <div class="card-title">Original Submission</div>
+    <div style="display:flex;flex-direction:column;gap:1rem;">
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px;">Title</div>
+        <div style="font-weight:500;line-height:1.4;">{{ report.title }}</div>
+      </div>
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px;">Type</div>
+        <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+      </div>
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px;">Submitted</div>
+        <div style="font-size:0.9rem;color:var(--text2);">{{ report.submitted_at|date:"d M Y" }}</div>
+      </div>
+      {% if report.resubmission_count > 0 %}
+      <div style="background:var(--amber-light);border-radius:8px;padding:10px 12px;">
+        <div style="font-size:0.78rem;color:var(--amber);font-weight:600;margin-bottom:2px;">Previous Resubmissions</div>
+        <div style="font-size:0.9rem;color:var(--text);">{{ report.resubmission_count }} time{{ report.resubmission_count|pluralize }}</div>
+      </div>
+      {% endif %}
+      {% if report.paper_doc %}
+      <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline btn-sm" style="justify-content:center;"><i class="bi bi-file-earmark-text"></i> View Original Paper</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Resubmission Form -->
+  <div class="card">
+    <div class="card-title">Upload Revised Paper</div>
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label>Revised Paper Document <span style="color:var(--red);">*</span></label>
+        <input type="file" name="resubmitted_paper_doc" accept=".pdf,.doc,.docx" required>
+        <div class="form-hint">Upload your updated paper (PDF, DOC or DOCX, max 20MB)</div>
+      </div>
+
+      <div class="form-group">
+        <label>Revision Notes <span style="color:var(--text3);font-weight:400;">(optional but recommended)</span></label>
+        <textarea name="revision_notes" rows="7" placeholder="Briefly describe the changes you made based on the reviewer's feedback:
+
+• What specific issues did you address?
+• What sections did you revise or add?
+• Any changes to methodology or results?
+• Other improvements made..."></textarea>
+        <div class="form-hint">These notes will be visible to the convener and reviewer.</div>
+      </div>
+
+      <div style="background:var(--accent-light);border-radius:8px;padding:12px 14px;margin-bottom:1.25rem;font-size:0.85rem;color:var(--accent);">
+        ℹ️ After resubmission, the convener will be notified and will reassign the paper for review.
+      </div>
+
+      <div style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-teal">Resubmit Paper →</button>
+        <a href="{% url 'author_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Send to Library — {{ report.title }}{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'head_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Send Report to Library</h1>
+  <p>Forward this approved report to the Librarian repository.</p>
+</div>
+
+<div class="card" style="max-width:680px;">
+
+  <!-- Report summary -->
+  <div style="background:#e1f5ee;border:1px solid #a8dcc8;border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.75rem;">
+    <div style="display:flex;align-items:flex-start;gap:14px;">
+      <i class="bi bi-file-earmark-check-fill" style="font-size:2rem;color:#0f6e56;flex-shrink:0;"></i>
+      <div>
+        <div style="font-weight:600;font-size:1rem;color:#0a4e3d;margin-bottom:4px;">{{ report.title }}</div>
+        <div style="font-size:0.85rem;color:#0f6e56;margin-bottom:2px;">Author: {{ report.author_name }}</div>
+        <div style="font-size:0.82rem;color:#0f6e56;">Type: {{ report.get_report_type_display }} &nbsp;·&nbsp; Submitted: {{ report.submitted_at|date:"d M Y" }}</div>
+        <div style="margin-top:8px;">
+          <span class="badge badge-green"><span class="badge-dot"></span>Approved by Head</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:0.95rem;color:var(--text2);margin-bottom:1.5rem;line-height:1.6;">
+    Sending this report to the library will notify all <strong>Librarians</strong> by email and make the final paper available for download in their dashboard. The <strong>author</strong> will also receive a confirmation.
+  </p>
+
+  <form method="POST">
+    {% csrf_token %}
+    <div class="form-group" style="margin-bottom:1.5rem;">
+      <label style="display:block;font-size:0.78rem;font-weight:600;color:var(--text2);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">
+        Optional Note to Librarian
+      </label>
+      <textarea
+        name="head_message"
+        rows="4"
+        placeholder="Add any special instructions or notes for the librarian (optional)…"
+        style="width:100%;padding:11px 14px;border:1.5px solid var(--border2);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:0.95rem;background:var(--surface);color:var(--text);outline:none;resize:vertical;"
+      ></textarea>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <button type="submit" class="btn btn-primary" style="background:#0f6e56;border-color:#0f6e56;display:inline-flex;align-items:center;gap:8px;">
+        <i class="bi bi-book"></i> Confirm — Send to Library
+      </button>
+      <a href="{% url 'head_dashboard' %}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

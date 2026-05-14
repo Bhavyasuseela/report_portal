@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Assign DOI — ReportPortal{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'librarian_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to Library</a>
+  <h1 style="margin-top:0.5rem;">Assign DOI &amp; Series Number</h1>
+  <p>Assign the official DOI and series number to this accepted publication.</p>
+</div>
+
+<div style="max-width:640px;display:grid;gap:1.5rem;">
+
+  <!-- Publication Details -->
+  <div class="card">
+    <div class="card-title"><i class="bi bi-journal-bookmark"></i> Publication Details</div>
+    <div style="display:grid;gap:0.9rem;">
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Title</div>
+        <div style="font-weight:500;line-height:1.4;">{{ report.title }}</div>
+      </div>
+      <div class="form-grid">
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Author</div>
+          <div>{{ report.author_name }}</div>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Type</div>
+          <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+        </div>
+      </div>
+      {% if report.series_title %}
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Series Title</div>
+        <div>{{ report.series_title }}</div>
+      </div>
+      {% endif %}
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Publisher</div>
+        <div>NCMRWF</div>
+      </div>
+      {% if report.language %}
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Language</div>
+        <div>{{ report.language }}</div>
+      </div>
+      {% endif %}
+      {% if report.description %}
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px;">Description</div>
+        <div class="abstract-box">{{ report.description }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Assign DOI Form -->
+  <div class="card">
+    <div class="card-title"><i class="bi bi-upc-scan"></i> Assign DOI &amp; Series Number</div>
+    {% if report.doi %}
+    <div style="background:#eaf3de;border:1px solid #b8d98a;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:0.87rem;color:#2a5008;">
+      <i class="bi bi-check-circle-fill"></i> DOI already assigned: <strong>{{ report.doi }}</strong>
+    </div>
+    {% endif %}
+    <form method="POST">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>DOI <span style="color:var(--red);">*</span></label>
+        <input type="text" name="doi" value="{{ report.doi }}" placeholder="e.g. 10.xxxx/ncmrwf.2026.001" required>
+        <div class="form-hint">Enter the official DOI to be assigned to this publication.</div>
+      </div>
+      <div class="form-group">
+        <label>Series Number</label>
+        <input type="text" name="series_number" value="{{ report.series_number }}" placeholder="e.g. NCMRWF/TR/2026/01">
+        <div class="form-hint">Enter the series/report number if applicable.</div>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:center;margin-top:1.25rem;">
+        <button type="submit" class="btn btn-teal"><i class="bi bi-upc-scan"></i> Assign DOI</button>
+        <a href="{% url 'librarian_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

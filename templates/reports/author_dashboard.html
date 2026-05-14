@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Author Dashboard — ReportPortal{% endblock %}
+{% block content %}
+
+<style>
+/* ── Author Dashboard local styles (no Django vars in style attrs) ── */
+.report-item { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); }
+.report-item-last { padding:1.25rem 1.5rem; }
+.pub-unassigned { font-size:0.87rem; color:var(--text3); font-style:italic; }
+.pub-assigned   { font-size:0.87rem; font-weight:600; color:#1e3f66; }
+.badge-resubmitted    { background:#f3e8fb; color:#7b35a3; }
+.badge-await-final    { background:#e8f0fb; color:#2d5a8e; }
+.badge-final-submitted { background:#e1f5ee; color:#0f6e56; }
+.badge-under-final    { background:#eef2fb; color:#1e3f66; }
+.resub-accepted { color:#3b6d11; font-weight:600; }
+</style>
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <h1>My Reports</h1>
+    <p>Track all your submitted reports and their review status.</p>
+  </div>
+  <a href="{% url 'submit_report' %}" class="btn btn-teal">+ Submit New Report</a>
+  <a href="{% url 'author_support' %}" class="btn btn-outline" style="border-color:#7b35a3;color:#7b35a3;"><i class="bi bi-life-preserver"></i> Support</a>
+</div>
+
+<!-- ── SUBMISSION TIMELINES INFO BANNER ───────────────────────────── -->
+<div class="card" style="margin-bottom:1.5rem;background:linear-gradient(135deg,#f0f6ff 0%,#e8f0fb 100%);border:1px solid #c3d7f5;border-left:4px solid #1e3f66;padding:1.2rem 1.5rem;">
+  <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.75rem;">
+    <i class="bi bi-clock-history" style="color:#1e3f66;font-size:1.1rem;"></i>
+    <span style="font-weight:700;color:#1e3f66;font-size:0.95rem;text-transform:uppercase;letter-spacing:0.04em;">Submission Timelines</span>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.75rem;">
+    <div style="background:white;border-radius:8px;padding:0.75rem 1rem;border:1px solid #d0ddf5;">
+      <div style="font-size:0.72rem;text-transform:uppercase;font-weight:700;color:#1e3f66;margin-bottom:4px;"><i class="bi bi-pencil-square"></i> Minor Revision</div>
+      <div style="font-size:1.4rem;font-weight:700;color:#e67e00;">2 weeks</div>
+      <div style="font-size:0.78rem;color:var(--text3);">from revision request date</div>
+    </div>
+    <div style="background:white;border-radius:8px;padding:0.75rem 1rem;border:1px solid #d0ddf5;">
+      <div style="font-size:0.72rem;text-transform:uppercase;font-weight:700;color:#1e3f66;margin-bottom:4px;"><i class="bi bi-tools"></i> Major Revision</div>
+      <div style="font-size:1.4rem;font-weight:700;color:var(--coral);">4 weeks</div>
+      <div style="font-size:0.78rem;color:var(--text3);">from revision request date</div>
+    </div>
+    <!-- <div style="background:white;border-radius:8px;padding:0.75rem 1rem;border:1px solid #d0ddf5;">
+      <div style="font-size:0.72rem;text-transform:uppercase;font-weight:700;color:#1e3f66;margin-bottom:4px;"><i class="bi bi-person-check"></i> Reviewer Decision</div>
+      <div style="font-size:1.4rem;font-weight:700;color:var(--teal);">3 weeks</div>
+      <div style="font-size:0.78rem;color:var(--text3);">from assignment date</div>
+    </div> -->
+    <div style="background:white;border-radius:8px;padding:0.75rem 1rem;border:1px solid #d0ddf5;">
+      <div style="font-size:0.72rem;text-transform:uppercase;font-weight:700;color:#1e3f66;margin-bottom:4px;"><i class="bi bi-calendar-plus"></i> Need More Time?</div>
+      <div style="font-size:1.1rem;font-weight:700;color:#7b35a3;">Request Extension</div>
+      <div style="font-size:0.78rem;color:var(--text3);">from your report's action panel</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── STATS ──────────────────────────────────────────────────────── -->
+<div class="stat-grid">
+  <div class="stat-card" style="border-top:3px solid var(--accent);">
+    <div class="stat-num">{{ stats.total }}</div>
+    <div class="stat-label">Total Submitted</div>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-num">{{ stats.under_review }}</div>
+    <div class="stat-label">Under Review</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-num">{{ stats.accepted }}</div>
+    <div class="stat-label">Accepted</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-num">{{ stats.revision }}</div>
+    <div class="stat-label">Needs Revision</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid #7b35a3;">
+    <div class="stat-num" style="color:#7b35a3;">{{ stats.resubmitted }}</div>
+    <div class="stat-label">Resubmitted</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid #2d5a8e;">
+    <div class="stat-num" style="color:#2d5a8e;">{{ stats.awaiting_final }}</div>
+    <div class="stat-label">Final Report Due</div>
+  </div>
+  {% if stats.resubmitted_accepted > 0 %}
+  <div class="stat-card" style="border-top:3px solid #3b6d11;">
+    <div class="stat-num" style="color:#3b6d11;">{{ stats.resubmitted_accepted }}</div>
+    <div class="stat-label">Resubmitted &amp; Accepted <i class="bi bi-check"></i></div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── REPORTS LIST ───────────────────────────────────────────────── -->
+<div class="card" style="padding:0;">
+  {% if reports %}
+  {% for report in reports %}
+  <div class="{% if forloop.last %}report-item-last{% else %}report-item{% endif %}">
+
+    <!-- Row 1: Title + Badges + Actions -->
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:0.75rem;">
+      <div style="flex:1;min-width:200px;">
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center;margin-bottom:0.35rem;">
+          <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+          {% if report.status == 'submitted' %}<span class="badge badge-blue"><span class="badge-dot"></span>Submitted</span>
+          {% elif report.status == 'under_review' %}<span class="badge badge-amber"><span class="badge-dot"></span>Under Review</span>
+          {% elif report.status == 'accepted' %}<span class="badge badge-green"><span class="badge-dot"></span>Accepted</span>
+          {% elif report.status == 'revision_required' %}<span class="badge badge-coral"><span class="badge-dot"></span>Revision Required</span>
+          {% elif report.status == 'head_sent_back' %}<span class="badge badge-coral"><span class="badge-dot"></span>Revision Required</span>
+          {% elif report.status == 'resubmitted' %}<span class="badge badge-resubmitted"><span class="badge-dot"></span>Resubmitted</span>
+          {% elif report.status == 'awaiting_final_report' %}<span class="badge badge-await-final"><span class="badge-dot"></span>Final Report Needed</span>
+          {% elif report.status == 'final_report_submitted' %}<span class="badge badge-final-submitted"><span class="badge-dot"></span>Final Submitted</span>
+          {% elif report.status == 'pending_head_approval' %}<span class="badge badge-under-final"><span class="badge-dot"></span>Under Final Review</span>
+          {% elif report.status == 'rejected' %}<span class="badge badge-red"><span class="badge-dot"></span>Rejected</span>
+          {% endif %}
+          {% if report.extension_requested and not report.extension_granted %}
+          <span class="badge" style="background:#fff8e1;color:#b07800;border:1px solid #ffe082;font-size:0.72rem;"><i class="bi bi-hourglass-split"></i> Extension Pending</span>
+          {% elif report.extension_granted %}
+          <span class="badge" style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;font-size:0.72rem;"><i class="bi bi-calendar-check"></i> Extension Granted (+{{ report.extension_days }}d)</span>
+          {% endif %}
+        </div>
+        <h3 style="margin:0 0 0.2rem;font-size:1rem;line-height:1.4;">{{ report.title }}</h3>
+        <div style="font-size:0.78rem;color:var(--text3);">
+          Submitted: {{ report.submitted_at|date:"d M Y" }}
+          {% if report.resubmission_count > 0 %}
+          &nbsp;·&nbsp;<span style="color:#7b35a3;"><i class="bi bi-arrow-repeat"></i> Resubmitted {{ report.resubmission_count }} time{{ report.resubmission_count|pluralize }}{% if report.status == 'accepted' %} — <span class="resub-accepted">Accepted <i class="bi bi-check"></i></span>{% endif %}</span>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+        {% if report.status == 'awaiting_final_report' %}
+        <a href="{% url 'submit_final_report' report.id %}" class="btn btn-sm" style="background:#2d5a8e;color:white;"><i class="bi bi-upload"></i> Submit Final</a>
+        <a href="{% url 'report_detail_author' report.id %}" class="btn btn-outline btn-sm" style="font-size:0.78rem;">View Details</a>
+        {% elif report.status == 'final_report_submitted' %}
+        <span style="font-size:0.78rem;color:#0f6e56;font-weight:600;"><i class="bi bi-check-circle-fill"></i> Awaiting convener</span>
+        <a href="{% url 'report_detail_author' report.id %}" class="btn btn-outline btn-sm" style="font-size:0.78rem;">View Details</a>
+        {% elif report.status == 'pending_head_approval' %}
+        <span style="font-size:0.78rem;color:#1e3f66;font-weight:600;"><i class="bi bi-hourglass-split"></i> With Head</span>
+        <a href="{% url 'report_detail_author' report.id %}" class="btn btn-outline btn-sm" style="font-size:0.78rem;">View Details</a>
+        {% elif report.status == 'revision_required' or report.status == 'head_sent_back' %}
+          {% if report.submission_deadline %}
+          <div style="font-size:0.78rem;color:var(--coral);font-weight:600;"><i class="bi bi-clock"></i> Due: {{ report.submission_deadline|date:"d M Y" }}</div>
+          {% endif %}
+          <a href="{% url 'report_detail_author' report.id %}" class="btn btn-outline btn-sm" style="font-size:0.78rem;">View Details</a>
+          <a href="{% url 'resubmit_report' report.id %}" class="btn btn-sm btn-teal"><i class="bi bi-pencil-square"></i> Resubmit</a>
+          {% if not report.extension_requested or report.extension_granted %}
+          <a href="{% url 'request_extension' report.id %}" class="btn btn-sm btn-outline" style="font-size:0.78rem;padding:4px 10px;"><i class="bi bi-calendar-plus"></i> Request Extension</a>
+          {% else %}
+          <span style="font-size:0.77rem;color:var(--amber);text-align:right;"><i class="bi bi-hourglass-split"></i> Extension pending</span>
+          {% endif %}
+        {% elif report.status == 'accepted' %}
+        <a href="{% url 'report_detail_author' report.id %}" class="btn btn-sm btn-success"><i class="bi bi-trophy"></i> View Accepted</a>
+        {% elif report.status == 'rejected' %}
+        <a href="{% url 'report_detail_author' report.id %}" class="btn btn-sm btn-danger">View Details</a>
+        {% else %}
+        <a href="{% url 'report_detail_author' report.id %}" class="btn btn-outline btn-sm">View Details</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- ── DEADLINE PROGRESS BAR (for revision-pending reports) ── -->
+    {% if report.submission_deadline and report.status == 'revision_required' or report.submission_deadline and report.status == 'head_sent_back' %}
+    <div style="margin-bottom:0.75rem;">
+      <div style="display:flex;justify-content:space-between;font-size:0.73rem;color:var(--text3);margin-bottom:4px;">
+        <span><i class="bi bi-flag"></i> Revision requested: {{ report.sent_back_to_author_at|date:"d M Y"|default:"—" }}</span>
+        <span><i class="bi bi-flag-fill" style="color:var(--coral);"></i> Deadline: {{ report.submission_deadline|date:"d M Y" }}</span>
+      </div>
+      <div style="background:#f0f0f0;border-radius:4px;height:6px;overflow:hidden;">
+        <div class="deadline-bar"
+             data-sent="{{ report.sent_back_to_author_at|date:'Y-m-d'|default:'' }}"
+             data-deadline="{{ report.submission_deadline|date:'Y-m-d' }}"
+             style="height:100%;border-radius:4px;background:var(--teal);width:10%;transition:width 0.4s;"></div>
+      </div>
+      {% if report.extension_granted %}
+      <div style="font-size:0.73rem;color:#2e7d32;margin-top:3px;"><i class="bi bi-calendar-check"></i> Extension granted — deadline extended by {{ report.extension_days }} day{{ report.extension_days|pluralize }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- ── REVIEWER FEEDBACK (Req 2) ── -->
+    {% if report.reviewer_feedback %}
+    <div style="margin-bottom:0.75rem;background:#f8fbff;border:1px solid #d0ddf5;border-left:3px solid var(--accent);border-radius:8px;padding:0.85rem 1rem;">
+      <div style="font-size:0.75rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.5rem;"><i class="bi bi-chat-left-text"></i> Reviewer Feedback</div>
+      {% if report.reviewed_at %}<div style="font-size:0.77rem;color:var(--text3);margin-bottom:0.4rem;">Submitted: {{ report.reviewed_at|date:"d M Y, H:i" }}</div>{% endif %}
+      <div style="font-size:0.85rem;color:var(--text2);white-space:pre-line;">{{ report.reviewer_feedback }}</div>
+      {% if report.reviewer_attachment %}
+      <div style="margin-top:0.6rem;padding-top:0.5rem;border-top:1px solid #d0ddf5;">
+        <a href="{% encrypted_file_url report.reviewer_attachment %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.8rem;"><i class="bi bi-paperclip"></i> Reviewer Attachment</a>
+      </div>
+      {% endif %}
+    </div>
+    {% elif report.status not in 'accepted,rejected' %}
+    <div style="font-size:0.81rem;color:var(--text3);margin-bottom:0.75rem;"><i class="bi bi-hourglass"></i> Awaiting reviewer feedback</div>
+    {% endif %}
+
+    <!-- ── PUBLICATION DETAILS ── -->
+    {% if report.series_title or report.description or report.keywords %}
+    <details>
+      <summary style="font-size:0.82rem;color:#1e3f66;cursor:pointer;font-weight:600;"><i class="bi bi-journal-bookmark"></i> Publication Details (submitted for library)</summary>
+      <div style="background:#f8faff;border:1px solid #d0ddf5;border-radius:8px;padding:0.9rem;margin-top:0.6rem;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:0.65rem;margin-bottom:0.5rem;">
+
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Publication Type</div>
+            <div style="font-size:0.87rem;font-weight:500;">{{ report.get_report_type_display }}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Author</div>
+            <div style="font-size:0.87rem;">{{ report.author_name }}</div>
+          </div>
+          {% if report.contributors %}
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Contributors</div>
+            <div style="font-size:0.84rem;color:var(--text2);">{{ report.contributors }}</div>
+          </div>
+          {% endif %}
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Series Title</div>
+            <div style="font-size:0.87rem;">{{ report.series_title|default:"—" }}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Series Number</div>
+            <div class="{% if not report.series_number %}pub-unassigned{% else %}pub-assigned{% endif %}">{{ report.series_number|default:"To be assigned" }}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">DOI</div>
+            <div class="{% if not report.doi %}pub-unassigned{% else %}pub-assigned{% endif %}">{{ report.doi|default:"Assigned by Librarian" }}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Language</div>
+            <div style="font-size:0.87rem;">{{ report.language|default:"English" }}</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Publisher</div>
+            <div style="font-size:0.87rem;">NCMRWF</div>
+          </div>
+          <div>
+            <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Keywords</div>
+            <div style="font-size:0.84rem;color:var(--text2);">{{ report.keywords }}</div>
+          </div>
+
+        </div>
+
+        {% if report.description %}
+        <div style="padding-top:0.6rem;border-top:1px solid #d0ddf5;">
+          <div style="font-size:0.68rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:3px;">Description</div>
+          <div style="font-size:0.84rem;color:var(--text2);line-height:1.6;">{{ report.description }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Library status note -->
+        {% if report.status == 'accepted' and report.sent_to_library_at %}
+        <div style="margin-top:0.65rem;padding:0.5rem 0.75rem;background:#e8f5e9;border-radius:6px;border-left:3px solid #4caf50;font-size:0.81rem;color:#2e7d32;">
+          <i class="bi bi-check-circle-fill"></i> <strong>Added to Library</strong> on {{ report.sent_to_library_at|date:"d M Y" }}. Librarian will assign the DOI and series number.
+        </div>
+        {% else %}
+        <div style="margin-top:0.65rem;padding:0.5rem 0.75rem;background:#fff8e1;border-radius:6px;border-left:3px solid #ffc107;font-size:0.81rem;color:#7a5c00;">
+          <i class="bi bi-info-circle"></i> These publication details will be used by the librarian once the report is accepted and forwarded.
+        </div>
+        {% endif %}
+
+      </div>
+    </details>
+    {% endif %}
+
+
+
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-file-earmark-text"></i></div>
+    <h3>No reports yet</h3>
+    <p style="margin-bottom:1.5rem;">You haven't submitted any reports. Start by submitting your first one.</p>
+    <a href="{% url 'submit_report' %}" class="btn btn-primary">Submit Your First Report</a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── DEADLINE PROGRESS BAR SCRIPT ── -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.deadline-bar').forEach(function (bar) {
+    const sent = bar.dataset.sent;
+    const deadline = bar.dataset.deadline;
+    if (!sent || !deadline) return;
+    const sentDate = new Date(sent);
+    const deadlineDate = new Date(deadline);
+    const today = new Date();
+    const total = deadlineDate - sentDate;
+    const elapsed = today - sentDate;
+    let pct = Math.max(5, Math.min(100, (elapsed / total) * 100));
+    bar.style.width = pct + '%';
+    if (pct >= 90) bar.style.background = 'var(--coral)';
+    else if (pct >= 65) bar.style.background = '#e67e00';
+    else bar.style.background = 'var(--teal)';
+  });
+  });
+});
+</script>
+{% endblock %}

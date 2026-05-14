@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Support Inbox — ReportPortal{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <h1>Support Inbox</h1>
+    <p>Support requests submitted by authors — respond and track them here.</p>
+  </div>
+  <a href="{% url 'convener_dashboard' %}" class="btn btn-outline btn-sm">← Convener Dashboard</a>
+</div>
+
+<!-- Stats -->
+<div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));">
+  <div class="stat-card" style="border-top:3px solid #e67e00;">
+    <div class="stat-num" style="color:#e67e00;">{{ stats.open }}</div>
+    <div class="stat-label">Open</div>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-num">{{ stats.responded }}</div>
+    <div class="stat-label">Responded</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid #888;">
+    <div class="stat-num" style="color:#888;">{{ stats.closed }}</div>
+    <div class="stat-label">Closed</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid var(--accent);">
+    <div class="stat-num">{{ stats.total }}</div>
+    <div class="stat-label">Total</div>
+  </div>
+</div>
+
+{% if stats.open > 0 %}
+<div style="background:#fff3e0;border:1px solid #ffcc80;border-left:4px solid #e67e00;border-radius:var(--radius);padding:0.9rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:10px;">
+  <i class="bi bi-life-preserver" style="font-size:1.2rem;color:#e67e00;"></i>
+  <span style="color:#7a4400;font-weight:600;">{{ stats.open }} open support request{{ stats.open|pluralize }} awaiting your response</span>
+</div>
+{% endif %}
+
+<!-- Filter -->
+<form method="get" class="filter-bar" style="margin-bottom:1rem;">
+  <select name="status" onchange="this.form.submit()">
+    <option value="open" {% if status_filter == 'open' %}selected{% endif %}>Open</option>
+    <option value="responded" {% if status_filter == 'responded' %}selected{% endif %}>Responded</option>
+    <option value="closed" {% if status_filter == 'closed' %}selected{% endif %}>Closed</option>
+    <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+  </select>
+</form>
+
+<div class="card" style="padding:0;">
+  {% if requests %}
+  {% for sr in requests %}
+  <div style="padding:1.1rem 1.4rem;border-bottom:1px solid var(--border);{% if forloop.last %}border-bottom:none;{% endif %}display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+    <div style="flex:1;min-width:200px;">
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:0.35rem;">
+        <span style="font-size:0.7rem;background:#f3e8fb;color:#7b35a3;padding:2px 8px;border-radius:4px;font-weight:600;">{{ sr.get_request_type_display }}</span>
+        {% if sr.status == 'open' %}
+        <span style="font-size:0.7rem;background:#fff3e0;color:#e67e00;padding:2px 8px;border-radius:4px;font-weight:600;"><i class="bi bi-hourglass-split"></i> Open</span>
+        {% elif sr.status == 'responded' %}
+        <span style="font-size:0.7rem;background:#e1f5ee;color:#0f6e56;padding:2px 8px;border-radius:4px;font-weight:600;"><i class="bi bi-check-circle"></i> Responded</span>
+        {% else %}
+        <span style="font-size:0.7rem;background:#f5f5f5;color:#888;padding:2px 8px;border-radius:4px;font-weight:600;"><i class="bi bi-check2-all"></i> Closed</span>
+        {% endif %}
+      </div>
+      <div style="font-weight:600;font-size:0.95rem;margin-bottom:0.15rem;">{{ sr.subject }}</div>
+      <div style="font-size:0.8rem;color:var(--text3);">
+        From: <strong>{{ sr.author.get_full_name|default:sr.author.email }}</strong>
+        &nbsp;·&nbsp; {{ sr.created_at|date:"d M Y, H:i" }}
+        {% if sr.report %}&nbsp;·&nbsp; <i class="bi bi-file-earmark-text"></i> {{ sr.report.title|truncatechars:40 }}{% endif %}
+      </div>
+      <div style="margin-top:0.5rem;font-size:0.83rem;color:var(--text2);background:#f8f8f8;border-radius:6px;padding:6px 10px;line-height:1.5;">
+        {{ sr.message|truncatechars:180 }}
+      </div>
+      {% if sr.convener_response %}
+      <div style="margin-top:0.4rem;font-size:0.78rem;color:#0f6e56;"><i class="bi bi-reply-fill"></i> Responded {{ sr.responded_at|date:"d M Y" }}</div>
+      {% endif %}
+    </div>
+    <div>
+      <a href="{% url 'convener_respond_support' sr.id %}" class="btn btn-sm {% if sr.status == 'open' %}btn-teal{% else %}btn-outline{% endif %}">
+        {% if sr.status == 'open' %}<i class="bi bi-reply"></i> Respond{% else %}View{% endif %}
+      </a>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-life-preserver"></i></div>
+    <h3>No {{ status_filter }} requests</h3>
+    <p>No support requests with status "{{ status_filter }}" at the moment.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

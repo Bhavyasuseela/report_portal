@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}Grant/Deny Extension — ReportPortal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'convener_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Review Extension Request</h1>
+  <p>The author has requested more time to resubmit their revised paper.</p>
+</div>
+
+<div style="max-width:780px;display:grid;grid-template-columns:1fr 1.1fr;gap:1.5rem;align-items:start;">
+
+  <!-- Request Details -->
+  <div>
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="card-title">Report</div>
+      <div style="font-weight:500;margin-bottom:0.4rem;">{{ report.title }}</div>
+      <div style="font-size:0.85rem;color:var(--text3);">by {{ report.author_name }} &lt;{{ report.author.email }}&gt;</div>
+    </div>
+
+    <div class="card" style="border-left:4px solid var(--amber);">
+      <div class="card-title" style="color:var(--amber);"><i class="bi bi-chat-left-quote"></i> Author's Request</div>
+      {% with reason=report.extension_request_reason %}
+      {% if reason and reason|slice:":1" == "[" %}
+        {% with parts=reason|slice:"1:" %}
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
+          <span style="font-size:0.72rem;text-transform:uppercase;font-weight:700;background:#fff8e1;color:#7a5c00;padding:3px 8px;border-radius:4px;border:1px solid #ffe082;">
+            <i class="bi bi-tag"></i> {{ parts|truncatechars_html:50 }}
+          </span>
+        </div>
+        {% endwith %}
+      {% endif %}
+      <div class="abstract-box" style="border-left-color:var(--amber);">
+        {% if reason and "] " in reason %}
+          {{ reason|slice:"reason.index']':" }}
+        {% else %}
+          {{ reason|default:"No reason provided." }}
+        {% endif %}
+      </div>
+      {% endwith %}
+      {% if report.extension_requested_at %}
+      <div style="font-size:0.8rem;color:var(--text3);margin-top:0.5rem;">Requested: {{ report.extension_requested_at|date:"d M Y, H:i" }}</div>
+      {% endif %}
+    </div>
+
+    {% if report.submission_deadline %}
+    <div class="card" style="margin-top:1.25rem;">
+      <div class="card-title">Current Deadline</div>
+      <div style="font-size:1.1rem;font-weight:600;color:var(--coral);">{{ report.submission_deadline|date:"d M Y" }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Decision Form -->
+  <div class="card">
+    <div class="card-title">Your Decision</div>
+    <form method="post">
+      {% csrf_token %}
+
+      <div style="display:flex;flex-direction:column;gap:0.75rem;margin-bottom:1.25rem;">
+        <label style="display:flex;align-items:flex-start;gap:0.6rem;cursor:pointer;padding:12px;border:2px solid var(--border);border-radius:8px;" id="lbl-grant">
+          <input type="radio" name="action" value="grant" checked style="margin-top:3px;" onchange="toggleDays(true)">
+          <span>
+            <strong style="color:var(--teal);"><i class="bi bi-check-circle-fill"></i> Grant Extension</strong>
+            <div style="font-size:0.8rem;color:var(--text3);">Extend the deadline and notify the author.</div>
+          </span>
+        </label>
+        <label style="display:flex;align-items:flex-start;gap:0.6rem;cursor:pointer;padding:12px;border:2px solid var(--border);border-radius:8px;" id="lbl-deny">
+          <input type="radio" name="action" value="deny" style="margin-top:3px;" onchange="toggleDays(false)">
+          <span>
+            <strong style="color:var(--coral);"><i class="bi bi-x-circle-fill"></i> Deny Extension</strong>
+            <div style="font-size:0.8rem;color:var(--text3);">Keep the original deadline and notify the author.</div>
+          </span>
+        </label>
+      </div>
+
+      <div id="days-section" class="form-group">
+        <label>Additional Days to Grant</label>
+        <select name="extra_days">
+          <option value="7">7 days (1 week)</option>
+          <option value="14" selected>14 days (2 weeks)</option>
+          <option value="21">21 days (3 weeks)</option>
+          <option value="28">28 days (4 weeks)</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Message to Author <span style="color:var(--text3);font-weight:400;">(optional)</span></label>
+        <textarea name="convener_message" rows="3" placeholder="Any instructions or notes for the author..."></textarea>
+      </div>
+
+      <div style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-teal">Submit Decision</button>
+        <a href="{% url 'convener_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleDays(show) {
+  document.getElementById('days-section').style.display = show ? '' : 'none';
+  document.getElementById('lbl-grant').style.borderColor = show ? 'var(--teal)' : 'var(--border)';
+  document.getElementById('lbl-deny').style.borderColor = !show ? 'var(--coral)' : 'var(--border)';
+}
+toggleDays(true);
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

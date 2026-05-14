@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Request Final Report — ReportPortal{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'convener_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Request Final Report from Author</h1>
+  <p>The reviewer has recommended acceptance. Ask the author to submit the final version of the report.</p>
+</div>
+
+<div style="max-width:700px;display:grid;gap:1.5rem;">
+
+  <!-- Report Summary -->
+  <div class="card">
+    <div class="card-title">Report Details</div>
+    <div style="display:grid;gap:0.85rem;">
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Title</div>
+        <div style="font-weight:500;">{{ report.title }}</div>
+      </div>
+      <div class="form-grid">
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Author</div>
+          <div>{{ report.author_name }}</div>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Type</div>
+          <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+        </div>
+      </div>
+      {% if report.reviewer_feedback %}
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:6px;">Reviewer Feedback</div>
+        <div class="abstract-box" style="border-left-color:#0f6e56;">{{ report.reviewer_feedback }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Request Form -->
+  <div class="card">
+    <div class="card-title"><i class="bi bi-send"></i> Send Request to Author</div>
+    <div style="background:#e8f0fb;border:1px solid #b8d0f0;border-radius:8px;padding:12px 16px;margin-bottom:1.25rem;font-size:0.87rem;color:#1e3f66;">
+      <i class="bi bi-info-circle"></i>
+      The author (<strong>{{ report.author.email }}</strong>) will receive an email asking them to upload the final version of the report.
+    </div>
+    <form method="POST">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Message to Author <span style="color:var(--text3);font-weight:400;">(optional)</span></label>
+        <textarea name="convener_message" rows="4" placeholder="Add any specific instructions or notes for the author regarding the final report..."></textarea>
+      </div>
+      <div style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-teal"><i class="bi bi-send"></i> Send Final Report Request</button>
+        <a href="{% url 'convener_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Reviewer Dashboard — ReportPortal
+{% endblock %}
+{% block content %}
+
+<style>
+.rv-card { border-radius:var(--radius); border:1px solid var(--border); background:var(--surface); margin-bottom:1.5rem; overflow:hidden; }
+.rv-card-header { padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); }
+.rv-detail-panel { display:none; border-top:1px solid var(--border); background:#fafbfc; }
+.rv-detail-panel.open { display:block; }
+.rv-hist-item { border:1px solid #e8d5f7; border-radius:8px; padding:0.85rem; margin-bottom:0.75rem; }
+.rv-hist-item:last-child { margin-bottom:0; }
+.rv-section-label { font-size:0.72rem; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.5rem; display:block; }
+</style>
+
+<div class="page-header">
+  <h1>My Assigned Reviews</h1>
+  <p>Papers assigned to you for review. Click <strong>View Details</strong> to see author information, history, and submitted feedback.</p>
+</div>
+
+{% if reports_with_history %}
+
+{% for item in reports_with_history %}
+{% with report=item.report history=item.resubmission_history %}
+<div class="rv-card">
+
+  <!-- CARD HEADER -->
+  <div class="rv-card-header">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;">
+      <div style="flex:1;min-width:220px;">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:6px;">
+          <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+          {% if report.resubmission_count > 0 %}
+          <span class="badge" style="background:#f3e8fb;color:#7b35a3;"><i class="bi bi-arrow-repeat"></i> Resubmission #{{ report.resubmission_count }}</span>
+          {% endif %}
+          {% if report.status == 'under_review' %}<span class="badge badge-amber"><span class="badge-dot"></span>Pending Review</span>
+          {% elif report.status == 'pending_convener_accept' or report.status == 'accepted' or report.status == 'awaiting_final_report' or report.status == 'final_report_submitted' or report.status == 'pending_head_approval' %}<span class="badge badge-green"><span class="badge-dot"></span>Accepted</span>
+          {% elif report.status == 'revision_required' %}<span class="badge badge-coral"><span class="badge-dot"></span>Revision Sent</span>
+          {% elif report.status == 'pending_convener_reject' or report.status == 'rejected' %}<span class="badge badge-red"><span class="badge-dot"></span>Rejected</span>
+          {% endif %}
+        </div>
+        <h3 style="font-size:1rem;font-weight:600;line-height:1.4;margin:0 0 4px;">{{ report.title }}</h3>
+        <div style="font-size:0.82rem;color:var(--text3);">by {{ report.author_name }} &nbsp;&middot;&nbsp; {{ report.submitted_at|date:"d M Y" }}</div>
+        {% if report.keywords %}
+        <div style="font-size:0.8rem;color:var(--text2);margin-top:4px;"><strong style="color:var(--text3);">Keywords:</strong> {{ report.keywords }}</div>
+        {% endif %}
+      </div>
+
+      <!-- Buttons -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-outline btn-sm rv-toggle-btn" data-target="detail-{{ report.id }}">
+          <i class="bi bi-eye"></i> View Details
+        </button>
+        {% if report.status == 'under_review' %}
+        <a href="{% url 'submit_review' report.id %}" class="btn btn-teal btn-sm">Submit Review &rarr;</a>
+        {% else %}
+        <span style="font-size:0.82rem;color:var(--text3);padding:6px 10px;background:#f5f5f5;border-radius:6px;">Review submitted</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if report.convener_notes %}
+    <div style="background:var(--accent-light);border-radius:8px;padding:8px 12px;margin-top:0.75rem;">
+      <div style="font-size:0.72rem;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Convener Notes</div>
+      <div style="font-size:0.85rem;color:var(--accent-dark);">{{ report.convener_notes }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Quick document links -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:0.75rem;">
+      {% if report.resubmitted_paper_doc %}
+      <a href="{% encrypted_file_url report.resubmitted_paper_doc %}" target="_blank" class="btn btn-sm" style="background:#f3e8fb;color:#7b35a3;border:1px solid #d9b8f0;"><i class="bi bi-arrow-repeat"></i> Revised Paper</a>
+      {% endif %}
+      {% if report.paper_doc %}
+      <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline btn-sm"><i class="bi bi-file-earmark-text"></i> {% if report.resubmitted_paper_doc %}Original{% else %}Full Paper{% endif %}</a>
+      {% endif %}
+      {% if report.plagiarism_doc %}
+      <a href="{% encrypted_file_url report.plagiarism_doc %}" target="_blank" class="btn btn-outline btn-sm"><i class="bi bi-file-earmark-check"></i> Plagiarism</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- DETAIL PANEL (toggled by View Details) -->
+  <div class="rv-detail-panel" id="detail-{{ report.id }}">
+    <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:0;align-items:start;">
+
+      <!-- Left: Author + Abstract + Resubmission History -->
+      <div style="padding:1.25rem 1.5rem;border-right:1px solid var(--border);">
+
+        <span class="rv-section-label"><i class="bi bi-person"></i> Author Details</span>
+        <div style="background:#f8faff;border:1px solid #d0ddf5;border-radius:8px;padding:0.85rem 1rem;margin-bottom:1.25rem;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <div>
+              <div style="font-size:0.7rem;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Name</div>
+              <div style="font-size:0.87rem;">{{ report.author_name }}</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Email</div>
+              <div style="font-size:0.85rem;word-break:break-all;">{{ report.author.email }}</div>
+            </div>
+            {% if report.contributors %}
+            <div style="grid-column:1/-1;">
+              <div style="font-size:0.7rem;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Contributors</div>
+              <div style="font-size:0.87rem;">{{ report.contributors }}</div>
+            </div>
+            {% endif %}
+            <div>
+              <div style="font-size:0.7rem;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Submitted</div>
+              <div style="font-size:0.87rem;">{{ report.submitted_at|date:"d M Y" }}</div>
+            </div>
+            <div>
+              <div style="font-size:0.7rem;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:2px;">Type</div>
+              <div style="font-size:0.87rem;">{{ report.get_report_type_display }}</div>
+            </div>
+          </div>
+        </div>
+
+        <span class="rv-section-label"><i class="bi bi-text-left"></i> Abstract</span>
+        <div class="abstract-box" style="font-size:0.85rem;margin-bottom:1.25rem;">{{ report.abstract }}</div>
+
+        <span class="rv-section-label"><i class="bi bi-clock-history"></i> Submission History ({{ report.resubmission_count }} resubmission{{ report.resubmission_count|pluralize }})</span>
+
+        <!-- Original submission tile -->
+        <div class="rv-hist-item" style="border-color:#d0ddf5;background:#f8faff;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+            <span style="font-weight:600;color:#1e3f66;font-size:0.85rem;"><i class="bi bi-calendar"></i> Original Submission</span>
+            <span style="font-size:0.77rem;color:var(--text3);">{{ report.submitted_at|date:"d M Y" }}</span>
+          </div>
+          <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.78rem;"><i class="bi bi-file-earmark-text"></i> Original Paper</a>
+        </div>
+
+        {% for hist in history %}
+        <div class="rv-hist-item">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+            <span style="font-weight:700;color:#7b35a3;font-size:0.85rem;"><i class="bi bi-arrow-repeat"></i> Resubmission #{{ hist.submission_number }}</span>
+            <span style="font-size:0.77rem;color:var(--text3);">{{ hist.submitted_at|date:"d M Y, H:i" }}</span>
+          </div>
+          {% if hist.revision_notes %}
+          <div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.4rem;font-style:italic;">{{ hist.revision_notes }}</div>
+          {% endif %}
+          <a href="{% encrypted_file_url hist.paper_doc %}" target="_blank" class="btn btn-sm" style="background:#f3e8fb;color:#7b35a3;border:1px solid #d9b8f0;font-size:0.78rem;">
+            <i class="bi bi-file-earmark-text"></i> Paper
+          </a>
+          {% if hist.reviewer_feedback %}
+          <div style="background:#f0f6ff;border-radius:6px;padding:0.5rem 0.7rem;margin-top:0.5rem;border-left:3px solid var(--accent);">
+            <div style="font-size:0.7rem;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:3px;">
+              Reviewer Feedback
+              {% if hist.reviewer_decision == 'accepted' %}<span style="color:green;"> &middot; Accepted</span>
+              {% elif hist.reviewer_decision == 'revision_required' %}<span style="color:#e67e00;"> &middot; Revision Required</span>
+              {% elif hist.reviewer_decision == 'rejected' %}<span style="color:red;"> &middot; Rejected</span>
+              {% endif %}
+            </div>
+            {% if hist.reviewed_at %}<div style="font-size:0.72rem;color:var(--text3);margin-bottom:3px;">{{ hist.reviewed_at|date:"d M Y" }}</div>{% endif %}
+            <div style="font-size:0.82rem;color:var(--text2);">{{ hist.reviewer_feedback }}</div>
+            {% if hist.reviewer_attachment %}
+            <a href="{% encrypted_file_url hist.reviewer_attachment %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.77rem;margin-top:0.4rem;"><i class="bi bi-paperclip"></i> Attachment</a>
+            {% endif %}
+          </div>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+      </div>
+
+      <!-- Right: Current submitted feedback + action -->
+      <div style="padding:1.25rem 1.5rem;">
+        <span class="rv-section-label"><i class="bi bi-chat-left-text"></i> Your Submitted Feedback</span>
+        {% if report.reviewer_feedback %}
+        <div style="background:#f8faff;border:1px solid #d0ddf5;border-radius:8px;padding:0.85rem 1rem;margin-bottom:0.75rem;">
+          {% if report.reviewed_at %}<div style="font-size:0.77rem;color:var(--text3);margin-bottom:0.4rem;">Submitted: {{ report.reviewed_at|date:"d M Y, H:i" }}</div>{% endif %}
+          <div class="abstract-box" style="font-size:0.85rem;margin:0;">{{ report.reviewer_feedback }}</div>
+          {% if report.reviewer_attachment %}
+          <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);">
+            <a href="{% encrypted_file_url report.reviewer_attachment %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.8rem;"><i class="bi bi-paperclip"></i> Your Latest Attached Document</a>
+          </div>
+          {% endif %}
+        </div>
+        {% else %}
+        <div style="font-size:0.85rem;color:var(--text3);font-style:italic;margin-bottom:0.75rem;">No feedback submitted yet for this assignment.</div>
+        {% endif %}
+
+        <!-- All Reviewer Attachments (accumulated history) -->
+        {% if item.reviewer_attachments_all %}
+        <div style="margin-bottom:1rem;">
+          <span class="rv-section-label"><i class="bi bi-paperclip"></i> All Submitted Attachments ({{ item.reviewer_attachments_all|length }})</span>
+          {% for att in item.reviewer_attachments_all %}
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;">
+            <div>
+              <div style="font-size:0.78rem;font-weight:600;color:var(--text2);">
+                {% if att.resubmission_number == 0 %}Original Review{% else %}Resubmission #{{ att.resubmission_number }}{% endif %}
+              </div>
+              <div style="font-size:0.72rem;color:var(--text3);">{{ att.submitted_at|date:"d M Y, H:i" }}</div>
+            </div>
+            <a href="{% encrypted_file_url att.attachment %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.75rem;"><i class="bi bi-download"></i></a>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if report.status == 'under_review' %}
+        <a href="{% url 'submit_review' report.id %}" class="btn btn-teal" style="width:100%;justify-content:center;">
+          <i class="bi bi-pencil-square"></i> Submit Your Review
+        </a>
+        {% endif %}
+
+        {% if report.series_title or report.description %}
+        <div style="margin-top:1.25rem;padding-top:1rem;border-top:1px solid var(--border);">
+          <span class="rv-section-label"><i class="bi bi-journal-bookmark"></i> Publication Info</span>
+          {% if report.series_title %}<div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.3rem;"><strong>Series:</strong> {{ report.series_title }}</div>{% endif %}
+          {% if report.description %}<div style="font-size:0.82rem;color:var(--text2);">{{ report.description|truncatechars:150 }}</div>{% endif %}
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endwith %}
+{% endfor %}
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-search"></i></div>
+    <h3>No papers assigned yet</h3>
+    <p>You will receive an email when a convener assigns a paper to you for review.</p>
+  </div>
+</div>
+{% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.rv-toggle-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var targetId = btn.getAttribute('data-target');
+      var panel = document.getElementById(targetId);
+      if (!panel) return;
+      var isOpen = panel.classList.contains('open');
+      panel.classList.toggle('open', !isOpen);
+      btn.innerHTML = isOpen
+        ? '<i class="bi bi-eye"></i> View Details'
+        : '<i class="bi bi-eye-slash"></i> Hide Details';
+    });
+  });
+});
+</script>
+{% endblock %}

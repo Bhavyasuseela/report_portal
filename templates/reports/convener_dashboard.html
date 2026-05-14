@@ -1,0 +1,523 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Convener Dashboard — ReportPortal{% endblock %}
+{% block content %}
+
+<style>
+/* ── Convener Dashboard local styles (no Django vars in style attrs) ── */
+.cd-stat-submitted { border-top:3px solid #5b8dd9; }
+.cd-stat-submitted .stat-num { color:#5b8dd9; }
+.cd-stat-decision { border-top:3px solid #e67e00; }
+.cd-stat-decision .stat-num { color:#e67e00; }
+.cd-stat-head { border-top:3px solid #1e3f66; }
+.cd-stat-head .stat-num { color:#1e3f66; }
+.cd-stat-final { border-top:3px solid #2d5a8e; }
+.cd-stat-final .stat-num { color:#2d5a8e; }
+.cd-stat-coral { border-top:3px solid #e05a3a; }
+.cd-stat-coral .stat-num { color:#e05a3a; }
+.cd-stat-purple { border-top:3px solid #7b35a3; }
+.cd-stat-purple .stat-num { color:#7b35a3; }
+tr.row-resubmitted { background:#fdf6ff; }
+tr.row-head-sent { background:#fff8f5; }
+.dl-overdue { font-size:0.73rem; color:#c0392b; font-weight:700; }
+.dl-pending { font-size:0.73rem; color:#e05a3a; }
+.badge-confirm-accept { background:#e1f5ee; color:#0f6e56; }
+.badge-confirm-reject { background:#fde8e8; color:#a31515; }
+.badge-await-final { background:#e8f0fb; color:#2d5a8e; }
+.badge-final-submitted { background:#e1f5ee; color:#0f6e56; }
+.badge-with-head { background:#eef2fb; color:#1e3f66; }
+.badge-resubmitted { background:#f3e8fb; color:#7b35a3; }
+.btn-purple { background:#7b35a3; color:white; }
+.btn-navy { background:#2d5a8e; color:white; }
+.btn-teal2 { background:#0f6e56; color:white; }
+.btn-orange { background:#e67e00; color:white; }
+.btn-await { background:#e8f0fb; color:#2d5a8e; border:1px solid #b8d0f0; }
+.btn-done { background:#e1f5ee; color:#0f6e56; border:1px solid #a8dcc8; }
+.btn-with-head { background:#eef2fb; color:#1e3f66; border:1px solid #b8c8f0; }
+.btn-sent { background:#f5f5f5; color:#aaa; border:1px solid #ddd; }
+.btn-ext { background:#fff8e1; color:#7a5c00; border:1px solid #ffe082; font-size:0.76rem; padding:3px 8px; }
+.btn-coral-soft { background:#fde8e8; color:#e05a3a; border:1px solid #f0c0b0; }
+.btn-red-soft { background:#fde8e8; color:#a31515; border:1px solid #f0b8b8; }
+.btn-remind { font-size:0.76rem; padding:3px 8px; }
+.resub-label { font-size:0.74rem; color:#7b35a3; margin-top:3px; font-weight:500; }
+.resub-date { font-size:0.75rem; color:#7b35a3; margin-top:2px; }
+.reminded-text { font-size:0.7rem; color:var(--text3); }
+.notif-pill { display:inline-block; background:#7b35a3; color:white; border-radius:50%; width:18px; height:18px; font-size:0.7rem; line-height:18px; text-align:center; margin-right:4px; }
+.alert-banner { border-radius:var(--radius); padding:1rem 1.5rem; margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between; gap:1rem; flex-wrap:wrap; }
+.alert-body { display:flex; align-items:center; gap:10px; }
+.alert-icon { font-size:1.3rem; }
+.alert-sub { font-size:0.85rem; }
+.alert-coral { background:#fff5f0; border:1px solid #f0c0b0; border-left:4px solid #e05a3a; }
+.alert-coral .alert-icon { color:#e05a3a; }
+.alert-coral .alert-title { color:#c04020; }
+.alert-coral .alert-sub { color:#a03010; }
+.alert-purple { background:#f3e8fb; border:1px solid #d9b8f0; border-left:4px solid #7b35a3; }
+.alert-purple .alert-icon { color:#7b35a3; }
+.alert-purple .alert-title { color:#7b35a3; }
+.alert-purple .alert-sub { color:#5a2080; }
+.alert-orange { background:#fff3e0; border:1px solid #ffcc80; border-left:4px solid #e67e00; margin-bottom:1.5rem; }
+.alert-orange .alert-icon { color:#e67e00; }
+.alert-orange .alert-title { color:#e67e00; }
+.alert-orange .alert-sub { color:#a05500; }
+.alert-green { background:#e1f5ee; border:1px solid #a8dcc8; border-left:4px solid #0f6e56; }
+.alert-green .alert-icon { color:#0f6e56; }
+.alert-green .alert-title { color:#0a4e3d; }
+.alert-green .alert-sub { color:#0f6e56; }
+.alert-red { background:#fff0f0; border:1px solid #f5b8b8; border-left:4px solid #c0392b; }
+.alert-red .alert-icon { color:#c0392b; }
+.alert-red .alert-title { color:#c0392b; }
+.alert-red .alert-sub { color:#a03020; }
+.alert-amber { background:#fff8e1; border:1px solid #ffe082; border-left:4px solid #f59e0b; }
+.alert-amber .alert-icon { color:#d97706; }
+.alert-amber .alert-title { color:#92400e; }
+.alert-amber .alert-sub { color:#b45309; }
+.alert-violet { background:#fdf4ff; border:1px solid #e2c7f7; border-left:4px solid #7b35a3; }
+.alert-violet .alert-icon { color:#7b35a3; }
+.alert-violet .alert-title { color:#7b35a3; }
+.alert-violet .alert-sub { color:#5a2080; }
+</style>
+
+<div class="page-header">
+  <h1>Convener Dashboard</h1>
+  <p>Manage all submitted reports, assign reviewers, and track resubmissions.</p>
+  <a href="{% url 'convener_support_inbox' %}" class="btn btn-outline btn-sm" style="margin-top:0.75rem;border-color:#7b35a3;color:#7b35a3;">
+    {% if stats.extension_pending_count > 0 %}<span class="notif-pill">{{ stats.extension_pending_count }}</span>{% endif %}
+    <i class="bi bi-life-preserver"></i> Support Inbox
+  </a>
+</div>
+
+<div class="stat-grid" style="grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));">
+  <div class="stat-card" style="border-top:3px solid var(--accent);">
+    <div class="stat-num">{{ stats.total }}</div>
+    <div class="stat-label">All Reports</div>
+  </div>
+  <div class="stat-card cd-stat-submitted">
+    <div class="stat-num">{{ stats.submitted }}</div>
+    <div class="stat-label">Awaiting Assignment</div>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-num">{{ stats.under_review }}</div>
+    <div class="stat-label">Under Review</div>
+  </div>
+  <div class="stat-card amber">
+    <div class="stat-num">{{ stats.revision }}</div>
+    <div class="stat-label">Revision Needed</div>
+  </div>
+  <div class="stat-card cd-stat-decision">
+    <div class="stat-num">{{ stats.pending_decision }}</div>
+    <div class="stat-label">Awaiting Your Decision</div>
+  </div>
+  <div class="stat-card cd-stat-head">
+    <div class="stat-num">{{ stats.pending_head_approval }}</div>
+    <div class="stat-label">With Head</div>
+  </div>
+  <div class="stat-card cd-stat-final">
+    <div class="stat-num">{{ stats.awaiting_final_report }}</div>
+    <div class="stat-label">Awaiting Final</div>
+  </div>
+  <div class="stat-card teal">
+    <div class="stat-num">{{ stats.final_report_submitted }}</div>
+    <div class="stat-label">Final Submitted</div>
+  </div>
+  <div class="stat-card cd-stat-coral">
+    <div class="stat-num">{{ stats.head_sent_back }}</div>
+    <div class="stat-label">Head Sent Back</div>
+  </div>
+  <div class="stat-card cd-stat-purple">
+    <div class="stat-num">{{ stats.resubmitted }}</div>
+    <div class="stat-label">Resubmitted</div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-num">{{ stats.accepted }}</div>
+    <div class="stat-label">Accepted</div>
+  </div>
+  <div class="stat-card red">
+    <div class="stat-num">{{ stats.rejected }}</div>
+    <div class="stat-label">Rejected</div>
+  </div>
+  {% if stats.dismissed_count > 0 %}
+  <a href="?status=dismissed" style="text-decoration:none;">
+  <div class="stat-card" style="border-color:#fca5a5;cursor:pointer;{% if show_dismissed %}background:#fef2f2;{% endif %}">
+    <div class="stat-num" style="color:#dc2626;">{{ stats.dismissed_count }}</div>
+    <div class="stat-label" style="color:#dc2626;">Dismissed</div>
+  </div>
+  </a>
+  {% endif %}
+</div>
+
+{% if stats.head_sent_back > 0 %}
+<div class="alert-banner alert-coral">
+  <div class="alert-body">
+    <i class="bi bi-arrow-return-left alert-icon"></i>
+    <div>
+      <strong class="alert-title">{{ stats.head_sent_back }} paper{{ stats.head_sent_back|pluralize }} sent back by Head</strong>
+      <div class="alert-sub">The Head (V.S. Prasad) requires changes — send these back to the author.</div>
+    </div>
+  </div>
+  <a href="?status=head_sent_back" class="btn btn-sm" style="background:#e05a3a;color:white;white-space:nowrap;">View Now</a>
+</div>
+{% endif %}
+
+{% if stats.resubmitted > 0 %}
+<div class="alert-banner alert-purple">
+  <div class="alert-body">
+    <i class="bi bi-arrow-repeat alert-icon"></i>
+    <div>
+      <strong class="alert-title">{{ stats.resubmitted }} paper{{ stats.resubmitted|pluralize }} awaiting reassignment</strong>
+      <div class="alert-sub">Authors have resubmitted revised papers — please assign reviewers to continue.</div>
+    </div>
+  </div>
+  <a href="?status=resubmitted" class="btn btn-sm btn-purple" style="white-space:nowrap;">View Resubmitted</a>
+</div>
+{% endif %}
+
+{% if stats.pending_decision > 0 %}
+<div class="alert-banner alert-orange">
+  <div class="alert-body">
+    <i class="bi bi-hourglass-split alert-icon"></i>
+    <div>
+      <strong class="alert-title">{{ stats.pending_decision }} report{{ stats.pending_decision|pluralize }} awaiting your final decision</strong>
+      <div class="alert-sub">A reviewer has submitted their recommendation — please confirm or override it.</div>
+    </div>
+  </div>
+  <a href="?status=pending_decision" class="btn btn-sm btn-orange" style="white-space:nowrap;">Review Now</a>
+</div>
+{% endif %}
+
+{% if stats.final_report_submitted > 0 %}
+<div class="alert-banner alert-green">
+  <div class="alert-body">
+    <i class="bi bi-file-earmark-check alert-icon"></i>
+    <div>
+      <strong class="alert-title">{{ stats.final_report_submitted }} final report{{ stats.final_report_submitted|pluralize }} ready to send to Head</strong>
+      <div class="alert-sub">Authors have submitted final versions — please forward to the Head for approval.</div>
+    </div>
+  </div>
+  <a href="?status=final_report_submitted" class="btn btn-sm btn-teal2" style="white-space:nowrap;">View Now</a>
+</div>
+{% endif %}
+
+{% if stats.overdue_count > 0 %}
+<div class="alert-banner alert-red">
+  <div class="alert-body">
+    <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
+    <div>
+      <strong class="alert-title">{{ stats.overdue_count }} author resubmission{{ stats.overdue_count|pluralize }} past deadline</strong>
+      <div class="alert-sub">These authors have missed their resubmission deadline — please send reminders now.</div>
+    </div>
+  </div>
+  <a href="?status=revision_required" class="btn btn-sm" style="background:#c0392b;color:white;white-space:nowrap;"><i class="bi bi-bell-fill"></i> Send Reminders</a>
+</div>
+{% endif %}
+
+{% if stats.reviewer_overdue_count > 0 %}
+<div class="alert-banner alert-amber">
+  <div class="alert-body">
+    <i class="bi bi-clock-history alert-icon"></i>
+    <div>
+      <strong class="alert-title">{{ stats.reviewer_overdue_count }} reviewer review{{ stats.reviewer_overdue_count|pluralize }} past 3-week deadline</strong>
+      <div class="alert-sub">Reviewers have not submitted their decision within the stipulated 3-week period.</div>
+    </div>
+  </div>
+  <a href="?status=under_review" class="btn btn-sm" style="background:#d97706;color:white;white-space:nowrap;">View Reports</a>
+</div>
+{% endif %}
+
+{% if stats.extension_pending_count > 0 %}
+<div class="alert-banner alert-violet">
+  <div class="alert-body">
+    <i class="bi bi-calendar-plus alert-icon"></i>
+    <div>
+      <strong class="alert-title">{{ stats.extension_pending_count }} extension request{{ stats.extension_pending_count|pluralize }} awaiting your decision</strong>
+      <div class="alert-sub">Authors have requested more time or reported issues — please grant or deny these requests.</div>
+    </div>
+  </div>
+  <a href="?status=revision_required" class="btn btn-sm btn-purple" style="white-space:nowrap;"><i class="bi bi-calendar-check"></i> Review Requests</a>
+</div>
+{% endif %}
+
+<form method="get" class="filter-bar">
+  <select name="status" onchange="this.form.submit()">
+    <option value="">All Statuses</option>
+    <option value="submitted" {% if status_filter == 'submitted' %}selected{% endif %}>Submitted</option>
+    <option value="under_review" {% if status_filter == 'under_review' %}selected{% endif %}>Under Review</option>
+    <option value="revision_required" {% if status_filter == 'revision_required' %}selected{% endif %}>Revision Required</option>
+    <option value="resubmitted" {% if status_filter == 'resubmitted' %}selected{% endif %}>Resubmitted (Awaiting Assignment)</option>
+    <option value="resubmitted_ever" {% if status_filter == 'resubmitted_ever' %}selected{% endif %}>All Resubmitted (incl. Accepted)</option>
+    <option value="pending_decision" {% if status_filter == 'pending_decision' %}selected{% endif %}>Awaiting Convener Decision</option>
+    <option value="pending_head_approval" {% if status_filter == 'pending_head_approval' %}selected{% endif %}>With Head for Approval</option>
+    <option value="head_sent_back" {% if status_filter == 'head_sent_back' %}selected{% endif %}>Head Sent Back</option>
+    <option value="awaiting_final_report" {% if status_filter == 'awaiting_final_report' %}selected{% endif %}>Awaiting Final Report</option>
+    <option value="final_report_submitted" {% if status_filter == 'final_report_submitted' %}selected{% endif %}>Final Report Submitted</option>
+    <option value="accepted" {% if status_filter == 'accepted' %}selected{% endif %}>Accepted</option>
+    <option value="rejected" {% if status_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+    <option value="dismissed" {% if status_filter == 'dismissed' %}selected{% endif %}>Dismissed (by me)</option>
+  </select>
+  <select name="type" onchange="this.form.submit()">
+    <option value="">All Types</option>
+    <option value="technical" {% if type_filter == 'technical' %}selected{% endif %}>Technical</option>
+    <option value="verification" {% if type_filter == 'verification' %}selected{% endif %}>Verification</option>
+    <option value="research" {% if type_filter == 'research' %}selected{% endif %}>Research</option>
+  </select>
+  {% if status_filter or type_filter %}
+  <a href="{% url 'convener_dashboard' %}" class="btn btn-outline btn-sm">Clear filters</a>
+  {% endif %}
+</form>
+
+<div class="card">
+  {% if reports %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Report</th>
+          <th>Author</th>
+          <th>Type</th>
+          <th>Submitted</th>
+          <th>Status</th>
+          <th>Reviewer</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for report in reports %}
+        <tr class="{% if report.status == 'resubmitted' %}row-resubmitted{% elif report.status == 'head_sent_back' %}row-head-sent{% endif %}">
+          <td style="max-width:240px;">
+            <strong style="font-size:0.92rem;display:block;">{{ report.title|truncatechars:70 }}</strong>
+            <div style="font-size:0.78rem;color:var(--text3);margin-top:3px;">{{ report.keywords|truncatechars:50 }}</div>
+            {% if report.resubmission_count > 0 %}
+            <div class="resub-label">
+              <i class="bi bi-arrow-repeat"></i> Resubmission #{{ report.resubmission_count }}
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-size:0.9rem;">{{ report.author_name }}
+              {% if report.author_id in multi_report_authors %}
+              <span title="{{ multi_report_authors|get_item:report.author_id }} reports from this author" style="display:inline-flex;align-items:center;gap:3px;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;border-radius:12px;font-size:0.7rem;font-weight:700;padding:1px 7px;margin-left:5px;cursor:help;">
+                ×{{ multi_report_authors|get_item:report.author_id }}
+              </span>
+              {% endif %}
+            </div>
+            <div style="font-size:0.78rem;color:var(--text3);">{{ report.author.email }}</div>
+          </td>
+          <td><span class="badge badge-blue">{{ report.get_report_type_display }}</span></td>
+          <td style="font-size:0.85rem;color:var(--text2);white-space:nowrap;">
+            {{ report.submitted_at|date:"d M Y" }}
+            {% if report.last_resubmitted_at %}
+            <div class="resub-date"><i class="bi bi-arrow-counterclockwise"></i> {{ report.last_resubmitted_at|date:"d M Y" }}</div>
+            {% endif %}
+          </td>
+          <td>
+            {% if report.status == 'submitted' %}
+              <span class="badge badge-blue"><span class="badge-dot"></span>Submitted</span>
+            {% elif report.status == 'under_review' %}
+              <span class="badge badge-amber"><span class="badge-dot"></span>Under Review</span>
+            {% elif report.status == 'pending_convener_accept' %}
+              <span class="badge badge-confirm-accept"><span class="badge-dot"></span>Confirm Accept?</span>
+            {% elif report.status == 'pending_convener_reject' %}
+              <span class="badge badge-confirm-reject"><span class="badge-dot"></span>Confirm Reject?</span>
+            {% elif report.status == 'awaiting_final_report' %}
+              <span class="badge badge-await-final"><span class="badge-dot"></span>Awaiting Final</span>
+            {% elif report.status == 'final_report_submitted' %}
+              <span class="badge badge-final-submitted"><span class="badge-dot"></span>Final Submitted</span>
+            {% elif report.status == 'pending_head_approval' %}
+              <span class="badge badge-with-head"><span class="badge-dot"></span>With Head</span>
+            {% elif report.status == 'head_sent_back' %}
+              <span class="badge badge-coral"><span class="badge-dot"></span>Head Sent Back</span>
+            {% elif report.status == 'accepted' %}
+              <span class="badge badge-green"><span class="badge-dot"></span>Accepted</span>
+            {% elif report.status == 'revision_required' %}
+              <span class="badge badge-coral"><span class="badge-dot"></span>Revision Needed</span>
+            {% elif report.status == 'resubmitted' %}
+              <span class="badge badge-resubmitted"><span class="badge-dot"></span>Resubmitted</span>
+            {% elif report.status == 'rejected' %}
+              <span class="badge badge-red"><span class="badge-dot"></span>Rejected</span>
+            {% endif %}
+          </td>
+          <td style="font-size:0.85rem;">
+            {% if report.assigned_reviewer %}
+              {{ report.assigned_reviewer.full_name|default:report.assigned_reviewer.email }}
+            {% else %}
+              <span style="color:var(--text3);">Unassigned</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;">
+              <a href="{% url 'report_detail_convener' report.id %}" class="btn btn-outline btn-sm">
+                View
+              </a>
+
+              {% if report.status == 'pending_convener_accept' or report.status == 'pending_convener_reject' %}
+                <a href="{% url 'convener_confirm_decision' report.id %}" class="btn btn-sm btn-orange">
+                  <i class="bi bi-hourglass-split"></i> Confirm
+                </a>
+
+              {% elif report.status == 'revision_required' %}
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  {% if report.sent_back_to_author_at %}
+                  <button class="btn btn-sm btn-sent" disabled title="Already sent to author on {{ report.sent_back_to_author_at|date:'d M Y' }}">
+                    <i class="bi bi-check-circle"></i> Sent
+                  </button>
+                  {% else %}
+                  <a href="{% url 'send_back_to_author' report.id %}" class="btn btn-sm btn-coral-soft">
+                    <i class="bi bi-reply"></i> Send to Author
+                  </a>
+                  {% endif %}
+                  {% if report.sent_back_to_author_at %}
+                  <a href="{% url 'send_resubmission_reminder' report.id %}"
+                     class="btn btn-sm btn-remind {% if report.submission_deadline and report.submission_deadline < now %}btn-danger{% else %}btn-outline{% endif %}"
+                     title="Send resubmission reminder email{% if report.reminder_sent_at %} (Last sent: {{ report.reminder_sent_at|date:'d M Y' }}){% endif %}">
+                    {% if report.submission_deadline and report.submission_deadline < now %}
+                      <i class="bi bi-bell-fill"></i> Overdue — Remind
+                    {% else %}
+                      <i class="bi bi-bell"></i> Send Reminder
+                    {% endif %}
+                  </a>
+                  {% if report.reminder_sent_at %}
+                  <div class="reminded-text">Last reminded: {{ report.reminder_sent_at|date:"d M Y" }}</div>
+                  {% endif %}
+                  {% endif %}
+                  {% if report.extension_requested and not report.extension_granted %}
+                  <a href="{% url 'grant_extension' report.id %}" class="btn btn-sm btn-ext">
+                    <i class="bi bi-calendar-plus"></i> Review Extension
+                  </a>
+                  {% endif %}
+                  {% if report.submission_deadline %}
+                    {% if report.submission_deadline < now %}
+                    <div class="dl-overdue"><i class="bi bi-clock-fill"></i> OVERDUE since {{ report.submission_deadline|date:"d M Y" }}</div>
+                    {% else %}
+                    <div class="dl-pending"><i class="bi bi-clock"></i> Due {{ report.submission_deadline|date:"d M Y" }}</div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+
+              {% elif report.status == 'head_sent_back' %}
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  {% if report.sent_back_to_author_at %}
+                  <button class="btn btn-sm btn-sent" disabled title="Already sent to author">
+                    <i class="bi bi-check-circle"></i> Sent
+                  </button>
+                  <a href="{% url 'send_resubmission_reminder' report.id %}"
+                     class="btn btn-sm btn-remind {% if report.submission_deadline and report.submission_deadline < now %}btn-danger{% else %}btn-outline{% endif %}">
+                    {% if report.submission_deadline and report.submission_deadline < now %}
+                      <i class="bi bi-bell-fill"></i> Overdue — Remind
+                    {% else %}
+                      <i class="bi bi-bell"></i> Send Reminder
+                    {% endif %}
+                  </a>
+                  {% if report.reminder_sent_at %}
+                  <div class="reminded-text">Last reminded: {{ report.reminder_sent_at|date:"d M Y" }}</div>
+                  {% endif %}
+                  {% else %}
+                  <a href="{% url 'send_back_to_author' report.id %}" class="btn btn-sm btn-red-soft">
+                    <i class="bi bi-reply"></i> Send to Author
+                  </a>
+                  {% endif %}
+                  {% if report.extension_requested and not report.extension_granted %}
+                  <a href="{% url 'grant_extension' report.id %}" class="btn btn-sm btn-ext">
+                    <i class="bi bi-calendar-plus"></i> Review Extension
+                  </a>
+                  {% endif %}
+                  {% if report.submission_deadline %}
+                    {% if report.submission_deadline < now %}
+                    <div class="dl-overdue"><i class="bi bi-clock-fill"></i> OVERDUE since {{ report.submission_deadline|date:"d M Y" }}</div>
+                    {% else %}
+                    <div class="dl-pending"><i class="bi bi-clock"></i> Due {{ report.submission_deadline|date:"d M Y" }}</div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+
+              {% elif report.status == 'resubmitted' %}
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  <a href="{% url 'assign_reviewer' report.id %}" class="btn btn-sm btn-purple">
+                    <i class="bi bi-arrow-repeat"></i> Reassign
+                  </a>
+                </div>
+
+              {% elif report.status == 'awaiting_final_report' %}
+                {% if report.final_report_requested_at %}
+                <button class="btn btn-sm btn-await" disabled title="Final report requested on {{ report.final_report_requested_at|date:'d M Y' }}">
+                  <i class="bi bi-hourglass"></i> Awaiting Author
+                </button>
+                {% else %}
+                <a href="{% url 'request_final_report' report.id %}" class="btn btn-sm btn-navy">
+                  <i class="bi bi-file-earmark-arrow-up"></i> Request Final
+                </a>
+                {% endif %}
+
+              {% elif report.status == 'final_report_submitted' %}
+                <a href="{% url 'convener_send_final_to_head' report.id %}" class="btn btn-sm btn-teal2">
+                  <i class="bi bi-send"></i> Send to Head
+                </a>
+
+              {% elif report.status == 'pending_head_approval' %}
+                <button class="btn btn-sm btn-with-head" disabled>
+                  <i class="bi bi-person-badge"></i> With Head
+                </button>
+
+              {% elif report.status == 'accepted' %}
+                <button class="btn btn-sm btn-done" disabled>
+                  <i class="bi bi-check-circle"></i> Approved
+                </button>
+
+              {% elif report.status == 'under_review' and report.assigned_reviewer %}
+                <div style="display:flex;flex-direction:column;gap:5px;">
+                  <span class="badge badge-amber" style="font-size:0.78rem;padding:5px 10px;"><span class="badge-dot"></span>Under Review</span>
+                  {% if report.assigned_reviewer %}
+                  <div style="font-size:0.72rem;color:var(--text3);">{{ report.assigned_reviewer.full_name|default:report.assigned_reviewer.email }}</div>
+                  {% endif %}
+                </div>
+
+              {% else %}
+                {% if report.assigned_by_convener and report.assigned_by_convener != current_convener %}
+                  <button class="btn btn-sm btn-primary" disabled title="Already assigned by {{ report.assigned_by_convener.full_name|default:report.assigned_by_convener.email }}" style="opacity:0.5;cursor:not-allowed;">
+                    <i class="bi bi-lock"></i> Assigned
+                  </button>
+                {% else %}
+                  <a href="{% url 'assign_reviewer' report.id %}" class="btn btn-primary btn-sm">Assign</a>
+                {% endif %}
+              {% endif %}
+
+              {# ── Dismiss / Restore button ── #}
+              {% if show_dismissed %}
+              <form method="post" action="{% url 'convener_undismiss_report' report.id %}" style="display:inline;margin-left:2px;">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm btn-outline" title="Restore this report to your dashboard" style="color:#059669;border-color:#059669;">
+                  <i class="bi bi-arrow-counterclockwise"></i> Restore
+                </button>
+              </form>
+              {% else %}
+              <form method="post" action="{% url 'convener_dismiss_report' report.id %}" style="display:inline;margin-left:2px;" onsubmit="return confirm('Remove this report from your view? You can restore it from the Dismissed filter.')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm" title="Remove from your dashboard view" style="background:#fef2f2;color:#dc2626;border:1px solid #fecaca;padding:4px 8px;">
+                  <i class="bi bi-x-lg"></i>
+                </button>
+              </form>
+              {% endif %}
+
+              {# ── Permanent Delete button ── #}
+              <form method="post" action="{% url 'convener_delete_report' report.id %}" style="display:inline;margin-left:2px;"
+                    onsubmit="return confirm('PERMANENTLY DELETE this report?\n\nTitle: {{ report.title|escapejs }}\nAuthor: {{ report.author_name|escapejs }}\n\nThis cannot be undone.')">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-sm" title="Permanently delete this report" style="background:#7f1d1d;color:#fff;border:1px solid #7f1d1d;padding:4px 9px;">
+                  <i class="bi bi-trash3"></i> Delete
+                </button>
+              </form>
+
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-clipboard2-data" style="font-size:2.5rem;color:var(--text3);"></i></div>
+    <h3>No reports found</h3>
+    <p>No reports match the current filter.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

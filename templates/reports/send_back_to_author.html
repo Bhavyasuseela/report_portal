@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Send Back to Author — ReportPortal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'convener_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Send Back to Author</h1>
+  <p>Notify the author to revise and resubmit their paper based on reviewer feedback.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1fr 1.2fr;gap:1.5rem;align-items:start;max-width:920px;">
+
+  <!-- Paper & Reviewer Feedback Summary -->
+  <div>
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="card-title">Paper Details</div>
+      <div style="display:flex;flex-direction:column;gap:0.9rem;">
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Title</div>
+          <div style="font-weight:500;line-height:1.4;">{{ report.title }}</div>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Author</div>
+          <div>{{ report.author_name }}</div>
+          <div style="font-size:0.82rem;color:var(--text3);">{{ report.author.email }}</div>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Type</div>
+          <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+        </div>
+        {% if report.reviewed_at %}
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Reviewed On</div>
+          <div style="font-size:0.9rem;color:var(--text2);">{{ report.reviewed_at|date:"d M Y, H:i" }}</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Reviewer Feedback (read-only) -->
+    <div class="card" style="border-left:4px solid var(--coral);">
+      <div class="card-title" style="color:var(--coral);"><i class="bi bi-pencil-square"></i> Reviewer Feedback</div>
+      <div class="abstract-box" style="border-left-color:var(--coral);">
+        {{ report.reviewer_feedback|default:"No written feedback was submitted by the reviewer." }}
+      </div>
+      <p style="font-size:0.8rem;color:var(--text3);margin-top:0.75rem;">This feedback will be included in the email sent to the author.</p>
+    </div>
+
+    {% if report.head_notes %}
+    <div class="card" style="margin-top:1.25rem;border-left:4px solid #a31515;">
+      <div class="card-title" style="color:#a31515;"><i class="bi bi-person-badge"></i> Head's Required Changes</div>
+      <div class="abstract-box" style="border-left-color:#a31515;">{{ report.head_notes }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Timeline Reference -->
+    <div class="card" style="margin-top:1.25rem;background:var(--accent-light);border:1px solid var(--accent);">
+      <div class="card-title" style="color:var(--accent);"><i class="bi bi-clock"></i> Committee-Approved Timelines</div>
+      <ul style="margin:0;padding-left:1.2rem;line-height:2;font-size:0.9rem;">
+        <li><strong>Major Revision</strong> — Author must resubmit within <strong>4 weeks</strong></li>
+        <li><strong>Minor Revision</strong> — Author must resubmit within <strong>2 weeks</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Send Back Form -->
+  <div class="card">
+    <div class="card-title">Notify Author to Revise</div>
+
+    <div style="background:var(--accent-light);border-radius:8px;padding:12px 14px;margin-bottom:1.5rem;font-size:0.875rem;color:var(--accent);">
+      <strong>What happens next:</strong>
+      <ol style="margin-top:6px;padding-left:1.2rem;line-height:1.8;">
+        <li>An email is sent to <strong>{{ report.author.email }}</strong></li>
+        <li>The email includes the reviewer's feedback and the resubmission deadline</li>
+        <li>The author logs in and clicks <strong>"Resubmit"</strong> or may request an extension</li>
+        <li>You get notified when they resubmit</li>
+      </ol>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- Revision Type -->
+      <div class="form-group" style="margin-bottom:1.25rem;">
+        <label>Revision Type <span style="color:var(--coral);">*</span></label>
+        <div style="display:flex;gap:1rem;margin-top:0.5rem;">
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:8px;flex:1;transition:all 0.2s;" id="lbl-major">
+            <input type="radio" name="revision_type" value="major" checked onchange="updateDeadlinePreview()" style="margin:0;">
+            <span>
+              <strong>Major Revision</strong>
+              <div style="font-size:0.78rem;color:var(--text3);">4-week deadline</div>
+            </span>
+          </label>
+          <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;padding:10px 16px;border:2px solid var(--border);border-radius:8px;flex:1;transition:all 0.2s;" id="lbl-minor">
+            <input type="radio" name="revision_type" value="minor" onchange="updateDeadlinePreview()" style="margin:0;">
+            <span>
+              <strong>Minor Revision</strong>
+              <div style="font-size:0.78rem;color:var(--text3);">2-week deadline</div>
+            </span>
+          </label>
+        </div>
+        <div style="margin-top:0.6rem;font-size:0.85rem;background:#f0f9f0;border:1px solid #c3e6c3;border-radius:6px;padding:8px 12px;color:#2a7a2a;" id="deadline-preview">
+          <i class="bi bi-calendar-check"></i> Deadline will be set to: <strong id="deadline-date">4 weeks from today</strong>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Additional Message to Author <span style="color:var(--text3);font-weight:400;">(optional)</span></label>
+        <textarea name="convener_message" rows="5" placeholder="Add any extra guidance or specific areas to focus on..."></textarea>
+        <div class="form-hint">This will appear below the reviewer feedback in the email.</div>
+      </div>
+
+      <div style="background:var(--coral-light);border:1px solid #f0c0b0;border-radius:8px;padding:12px 14px;margin-bottom:1.5rem;font-size:0.85rem;color:var(--coral);">
+        <i class="bi bi-envelope"></i> An email will be sent to <strong>{{ report.author.email }}</strong> with the deadline included.
+      </div>
+
+      <div style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-teal">Send to Author →</button>
+        <a href="{% url 'convener_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+function updateDeadlinePreview() {
+  const isMajor = document.querySelector('input[name="revision_type"][value="major"]').checked;
+  const weeks = isMajor ? 4 : 2;
+  const d = new Date();
+  d.setDate(d.getDate() + weeks * 7);
+  const opts = { day: 'numeric', month: 'short', year: 'numeric' };
+  document.getElementById('deadline-date').textContent =
+    weeks + ' weeks from today (' + d.toLocaleDateString('en-IN', opts) + ')';
+  // highlight selected radio card
+  document.getElementById('lbl-major').style.borderColor = isMajor ? 'var(--accent)' : 'var(--border)';
+  document.getElementById('lbl-minor').style.borderColor = !isMajor ? 'var(--accent)' : 'var(--border)';
+}
+updateDeadlinePreview();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

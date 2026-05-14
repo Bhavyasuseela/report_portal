@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Review Paper — {{ report.title }}
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'head_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Final Review — Head Approval</h1>
+  <p>Review this paper and either approve it for the library or send it back with notes.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem;align-items:start;max-width:960px;">
+
+  <!-- Left: Report Details -->
+  <div>
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Report Details</div>
+      <div class="detail-grid">
+        <div class="detail-item"><label>Title</label><p>{{ report.title }}</p></div>
+        <div class="detail-item"><label>Author</label><p>{{ report.author_name }}</p></div>
+        <div class="detail-item"><label>Type</label><p><span class="badge badge-blue">{{ report.get_report_type_display }}</span></p></div>
+        <div class="detail-item"><label>Keywords</label><p>{{ report.keywords }}</p></div>
+        {% if report.contributors %}
+        <div class="detail-item"><label>Contributors</label><p>{{ report.contributors }}</p></div>
+        {% endif %}
+        <div class="detail-item"><label>Submitted</label><p>{{ report.submitted_at|date:"d M Y" }}</p></div>
+        {% if report.resubmission_count > 0 %}
+        <div class="detail-item"><label>Resubmissions</label><p style="color:#7b35a3;font-weight:500;">#{{ report.resubmission_count }}</p></div>
+        {% endif %}
+      </div>
+      <div style="margin-top:1rem;">
+        <label style="font-size:0.78rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;">Abstract</label>
+        <div class="abstract-box">{{ report.abstract }}</div>
+      </div>
+    </div>
+
+    <!-- Reviewer Feedback -->
+    <div class="card" style="margin-bottom:1.5rem;border-left:4px solid var(--amber);">
+      <div class="card-title">Reviewer Feedback</div>
+      {% if report.reviewed_at %}
+      <p style="font-size:0.82rem;color:var(--text3);margin-bottom:0.75rem;">Reviewed on {{ report.reviewed_at|date:"d M Y, H:i" }}</p>
+      {% endif %}
+      <div class="abstract-box">{{ report.reviewer_feedback|default:"No feedback provided." }}</div>
+      {% if report.reviewer_attachment %}
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <a href="{% encrypted_file_url report.reviewer_attachment %}" target="_blank" class="btn btn-outline btn-sm">
+          <i class="bi bi-paperclip"></i> Reviewer's Annotated Document
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Documents -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Documents</div>
+      {% if report.final_report_doc %}
+      <div style="background:#e1f5ee;border:1px solid #a8dcc8;border-radius:8px;padding:8px 12px;margin-bottom:8px;font-size:0.75rem;color:#0f6e56;font-weight:600;">
+        ⭐ Final Report (submitted by author)
+      </div>
+      <a href="{% encrypted_file_url report.final_report_doc %}" target="_blank" class="btn" style="width:100%;justify-content:center;background:#e1f5ee;color:#0f6e56;border:1px solid #a8dcc8;margin-bottom:8px;">
+        <i class="bi bi-file-earmark-check"></i> Download Final Report
+      </a>
+      {% endif %}
+      {% if report.resubmitted_paper_doc %}
+      <a href="{% encrypted_file_url report.resubmitted_paper_doc %}" target="_blank" class="btn" style="width:100%;justify-content:center;background:#f3e8fb;color:#7b35a3;border:1px solid #d9b8f0;margin-bottom:8px;">
+        <i class="bi bi-arrow-repeat"></i> Download Revised Paper
+      </a>
+      <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:8px;opacity:0.7;font-size:0.82rem;">
+        <i class="bi bi-file-earmark-text"></i> Original Submission
+      </a>
+      {% else %}
+      <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:8px;">
+        <i class="bi bi-file-earmark-arrow-down"></i> Download Paper
+      </a>
+      {% endif %}
+      {% if report.plagiarism_doc %}
+      <a href="{% encrypted_file_url report.plagiarism_doc %}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;">
+        <i class="bi bi-file-earmark-check"></i> Plagiarism Report
+      </a>
+      {% endif %}
+    </div>
+
+    <!-- Resubmission History for Head (Req 4) -->
+    {% if resubmission_history %}
+    <div class="card" style="border-left:4px solid #7b35a3;">
+      <div class="card-title" style="color:#7b35a3;"><i class="bi bi-clock-history"></i> Resubmission History</div>
+      {% for hist in resubmission_history %}
+      <div style="border:1px solid #e8d5f7;border-radius:8px;padding:0.85rem;margin-bottom:0.75rem;background:{% if forloop.last %}#fdf6ff{% else %}#fafafa{% endif %};">
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem;">
+          <span style="font-weight:700;color:#7b35a3;font-size:0.87rem;"><i class="bi bi-arrow-repeat"></i> Resubmission #{{ hist.submission_number }}</span>
+          <span style="font-size:0.77rem;color:var(--text3);">{{ hist.submitted_at|date:"d M Y" }}</span>
+        </div>
+        {% if hist.revision_notes %}
+        <div style="font-size:0.82rem;color:var(--text2);margin-bottom:0.4rem;"><em>Author notes: {{ hist.revision_notes }}</em></div>
+        {% endif %}
+        <a href="{% encrypted_file_url hist.paper_doc %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.78rem;margin-bottom:{% if hist.reviewer_feedback %}0.5rem{% else %}0{% endif %};">
+          <i class="bi bi-file-earmark-text"></i> Paper
+        </a>
+        {% if hist.reviewer_feedback %}
+        <div style="background:#f0f6ff;border-radius:6px;padding:0.5rem 0.7rem;margin-top:0.5rem;border-left:3px solid var(--accent);">
+          <div style="font-size:0.7rem;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:3px;">
+            Reviewer Feedback
+            {% if hist.reviewer_decision == 'accepted' %}<span style="color:green;"> · Accepted</span>
+            {% elif hist.reviewer_decision == 'revision_required' %}<span style="color:#e67e00;"> · Revision Required</span>
+            {% elif hist.reviewer_decision == 'rejected' %}<span style="color:red;"> · Rejected</span>
+            {% endif %}
+          </div>
+          <div style="font-size:0.82rem;color:var(--text2);">{{ hist.reviewer_feedback }}</div>
+          {% if hist.reviewer_attachment %}
+          <a href="{% encrypted_file_url hist.reviewer_attachment %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.77rem;margin-top:0.4rem;"><i class="bi bi-paperclip"></i> Attachment</a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Final Report Notes -->
+    {% if report.final_report_notes %}
+    <div class="card" style="border-left:4px solid #0f6e56;">
+      <div class="card-title" style="color:#0f6e56;"><i class="bi bi-file-earmark-check"></i> Author's Final Report Notes</div>
+      <div class="abstract-box">{{ report.final_report_notes }}</div>
+      {% if report.final_report_submitted_at %}
+      <div style="font-size:0.8rem;color:var(--text3);margin-top:0.5rem;">Submitted: {{ report.final_report_submitted_at|date:"d M Y, H:i" }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Right: Decision -->
+  <div class="card" style="position:sticky;top:1.5rem;">
+    <div class="card-title">Your Decision</div>
+    <p style="font-size:0.88rem;color:var(--text2);margin-bottom:1.25rem;">
+      If the paper meets the required standard, approve it and it will be ready to send to the library. If changes are needed, send it back to the convener with notes.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group" style="margin-bottom:1.25rem;">
+        <label>Decision <span style="color:var(--red);">*</span></label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          <label id="lbl-approve" style="display:flex;align-items:center;gap:10px;font-size:0.95rem;font-weight:400;color:var(--text);text-transform:none;letter-spacing:0;cursor:pointer;padding:10px 14px;border:1.5px solid var(--border2);border-radius:8px;transition:border 0.2s;">
+            <input type="radio" name="decision" value="approve" onchange="toggleNotes(this)" style="width:auto;margin:0;" checked>
+            <i class="bi bi-check-circle-fill" style="font-size:1.2rem;color:#0f6e56;"></i>
+            <div>
+              <div style="font-weight:500;">Approve</div>
+              <div style="font-size:0.8rem;color:var(--text3);">Paper is ready for the library</div>
+            </div>
+          </label>
+
+          <label id="lbl-send_back" style="display:flex;align-items:center;gap:10px;font-size:0.95rem;font-weight:400;color:var(--text);text-transform:none;letter-spacing:0;cursor:pointer;padding:10px 14px;border:1.5px solid var(--border2);border-radius:8px;transition:border 0.2s;">
+            <input type="radio" name="decision" value="send_back" onchange="toggleNotes(this)" style="width:auto;margin:0;">
+            <i class="bi bi-arrow-return-left" style="font-size:1.2rem;color:#a31515;"></i>
+            <div>
+              <div style="font-weight:500;">Send Back — Changes Needed</div>
+              <div style="font-size:0.8rem;color:var(--text3);">Return to convener with required changes</div>
+            </div>
+          </label>
+
+        </div>
+      </div>
+
+      <div class="form-group" id="notes-section" style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:0.78rem;font-weight:600;color:var(--text2);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em;">
+          Notes / Comments <span id="notes-required" style="color:var(--red);display:none;">*</span>
+          <span id="notes-optional" style="color:var(--text3);font-weight:400;font-style:italic;">(optional for approval)</span>
+        </label>
+        <textarea
+          name="head_notes"
+          id="head_notes"
+          rows="5"
+          placeholder="Add notes for the convener or any specific changes required…"
+          style="width:100%;padding:11px 14px;border:1.5px solid var(--border2);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:0.95rem;background:var(--surface);color:var(--text);outline:none;resize:vertical;"
+        ></textarea>
+      </div>
+
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:0.84rem;color:#7a5c00;margin-bottom:1.25rem;">
+        <i class="bi bi-exclamation-triangle-fill"></i> The convener will be notified of your decision immediately.
+      </div>
+
+      <div style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-teal">Submit Decision</button>
+        <a href="{% url 'head_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  toggleNotes(document.querySelector('input[name="decision"]:checked'));
+});
+function toggleNotes(radio) {
+  if (!radio) return;
+  ['approve','send_back'].forEach(function(v) {
+    var lbl = document.getElementById('lbl-' + v);
+    if (lbl) lbl.style.borderColor = 'var(--border2)';
+  });
+  var lbl = document.getElementById('lbl-' + radio.value);
+  if (lbl) {
+    var colors = { approve: '#0f6e56', send_back: '#a31515' };
+    lbl.style.borderColor = colors[radio.value] || 'var(--accent)';
+  }
+  var req = document.getElementById('notes-required');
+  var opt = document.getElementById('notes-optional');
+  if (radio.value === 'send_back') {
+    req.style.display = 'inline';
+    opt.style.display = 'none';
+  } else {
+    req.style.display = 'none';
+    opt.style.display = 'inline';
+  }
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

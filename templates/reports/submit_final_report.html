@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Submit Final Report — ReportPortal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'author_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Submit Final Report</h1>
+  <p>Your report has been accepted. Please upload the final version below.</p>
+</div>
+
+<div style="max-width:700px;display:grid;gap:1.5rem;">
+
+  <!-- Success Banner -->
+  <div style="background:#eaf3de;border:1px solid #b8d98a;border-left:5px solid #3b6d11;border-radius:var(--radius);padding:1.1rem 1.5rem;display:flex;align-items:center;gap:12px;">
+    <i class="bi bi-check-circle-fill" style="font-size:1.5rem;color:#3b6d11;flex-shrink:0;"></i>
+    <div>
+      <strong style="color:#2a5008;">Reviewer has recommended acceptance!</strong>
+      <div style="font-size:0.85rem;color:#3b6d11;margin-top:2px;">Please submit the final, polished version of your report to proceed.</div>
+    </div>
+  </div>
+
+  <!-- Instructions -->
+  <div style="background:#e8f0fb;border:1px solid #b8d0f0;border-left:5px solid #2d5a8e;border-radius:var(--radius);padding:1.1rem 1.5rem;">
+    <div style="font-weight:600;color:#1e3f66;margin-bottom:0.6rem;"><i class="bi bi-info-circle-fill"></i> Final Report Instructions</div>
+    <ul style="margin:0;padding-left:1.2rem;color:#1e3f66;font-size:0.88rem;line-height:1.9;">
+      <li>Upload the final, complete version of your manuscript.</li>
+      <li>Ensure the document follows the prescribed NCMRWF format.</li>
+      <li>Include a plagiarism report if not already submitted (Research &lt;30%, Technical &lt;50%).</li>
+      <li>Series Number and DOI will be assigned by the Library after final approval.</li>
+      <li>Once submitted, the convener will forward your report to the Head for final approval.</li>
+    </ul>
+  </div>
+
+  <!-- Report Info -->
+  <div class="card">
+    <div class="card-title">Report Details</div>
+    <div style="display:grid;gap:0.75rem;">
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Title</div>
+        <div style="font-weight:500;">{{ report.title }}</div>
+      </div>
+      <div class="form-grid">
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Type</div>
+          <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+        </div>
+        <div>
+          <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:3px;">Submitted</div>
+          <div style="font-size:0.88rem;color:var(--text2);">{{ report.submitted_at|date:"d M Y" }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload Form -->
+  <div class="card">
+    <div class="card-title"><i class="bi bi-upload"></i> Upload Final Report</div>
+    <form method="POST" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Final Report Document <span style="color:var(--red);">*</span></label>
+        <input type="file" name="final_report_doc" accept=".pdf,.doc,.docx" required>
+        <div class="form-hint">PDF, DOC or DOCX (max 20MB) — this will be the version sent to the Head for approval.</div>
+      </div>
+      <div class="form-group">
+        <label>Notes to Convener <span style="color:var(--text3);font-weight:400;">(optional)</span></label>
+        <textarea name="final_report_notes" rows="3" placeholder="Any notes or changes made in the final version..."></textarea>
+      </div>
+      <div style="display:flex;gap:1rem;align-items:center;">
+        <button type="submit" class="btn btn-teal"><i class="bi bi-send"></i> Submit Final Report</button>
+        <a href="{% url 'author_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

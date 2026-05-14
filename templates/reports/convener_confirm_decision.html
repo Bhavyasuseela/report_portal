@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Confirm Review Decision — ReportPortal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'convener_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Confirm Review Decision</h1>
+  <p>The reviewer has submitted their recommendation. Please review the feedback and select a final action.</p>
+</div>
+
+<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:1.5rem;align-items:start;max-width:960px;">
+
+  <!-- Left: Report & Reviewer Feedback -->
+  <div>
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Report Details</div>
+      <div class="detail-grid">
+        <div class="detail-item"><label>Title</label><p>{{ report.title }}</p></div>
+        <div class="detail-item"><label>Author</label><p>{{ report.author_name }}</p></div>
+        <div class="detail-item"><label>Type</label><p><span class="badge badge-blue">{{ report.get_report_type_display }}</span></p></div>
+        <div class="detail-item"><label>Keywords</label><p>{{ report.keywords }}</p></div>
+        {% if report.contributors %}
+        <div class="detail-item"><label>Contributors</label><p>{{ report.contributors }}</p></div>
+        {% endif %}
+      </div>
+      <div style="margin-top:1rem;">
+        <label style="font-size:0.78rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;">Abstract</label>
+        <div class="abstract-box">{{ report.abstract }}</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.5rem;border-left:4px solid var(--amber);">
+      <div class="card-title">Reviewer's Feedback</div>
+      {% if report.reviewed_at %}
+      <p style="font-size:0.82rem;color:var(--text3);margin-bottom:0.75rem;">Reviewed on {{ report.reviewed_at|date:"d M Y, H:i" }}</p>
+      {% endif %}
+
+      {% if report.status == 'pending_convener_accept' %}
+      <div style="background:#e1f5ee;border:1px solid #a8dcc8;border-radius:8px;padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;gap:10px;">
+        <i class="bi bi-check-circle-fill" style="font-size:1.4rem;color:#0f6e56;"></i>
+        <div>
+          <strong style="color:#0f6e56;">Reviewer recommends: ACCEPTANCE</strong>
+          <div style="font-size:0.83rem;color:#0a4e3d;">The reviewer believes this paper is ready for the final report submission.</div>
+        </div>
+      </div>
+      {% elif report.status == 'pending_convener_reject' %}
+      <div style="background:#fde8e8;border:1px solid #f0b8b8;border-radius:8px;padding:10px 14px;margin-bottom:1rem;display:flex;align-items:center;gap:10px;">
+        <i class="bi bi-x-circle-fill" style="font-size:1.4rem;color:#a31515;"></i>
+        <div>
+          <strong style="color:#a31515;">Reviewer recommends: REJECTION</strong>
+          <div style="font-size:0.83rem;color:#7a1010;">The reviewer believes this paper does not meet publication standards.</div>
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="abstract-box">{{ report.reviewer_feedback }}</div>
+
+      {% if report.reviewer_attachment %}
+      <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);">
+        <a href="{% encrypted_file_url report.reviewer_attachment %}" target="_blank" class="btn btn-outline btn-sm">
+          <i class="bi bi-paperclip"></i> Download Reviewer's Annotated Document
+        </a>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Documents -->
+    <div class="card">
+      <div class="card-title">Documents</div>
+      {% if report.resubmitted_paper_doc %}
+      <a href="{% encrypted_file_url report.resubmitted_paper_doc %}" target="_blank" class="btn" style="width:100%;justify-content:center;background:#f3e8fb;color:#7b35a3;border:1px solid #d9b8f0;margin-bottom:8px;"><i class="bi bi-arrow-repeat"></i> Download Revised Paper</a>
+      <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:8px;opacity:0.7;font-size:0.82rem;"><i class="bi bi-file-earmark-text"></i> Original Submission</a>
+      {% else %}
+      <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:8px;"><i class="bi bi-file-earmark-text"></i> Download Paper</a>
+      {% endif %}
+      {% if report.plagiarism_doc %}
+      <a href="{% encrypted_file_url report.plagiarism_doc %}" target="_blank" class="btn btn-outline" style="width:100%;justify-content:center;"><i class="bi bi-file-earmark-check"></i> Plagiarism Report</a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Right: Decision Form -->
+  <div class="card" style="position:sticky;top:1.5rem;">
+    <div class="card-title">Your Action</div>
+
+    {% if report.status == 'pending_convener_accept' %}
+    <div style="background:#e8f0fb;border:1px solid #b8d0f0;border-radius:8px;padding:10px 14px;margin-bottom:1.25rem;font-size:0.85rem;color:#1e3f66;">
+      <i class="bi bi-info-circle"></i>
+      <strong>Workflow:</strong> If you accept, the author will be asked to submit the final report. After that, you will send it to the Head for approval.
+    </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Select Action <span style="color:var(--red);">*</span></label>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+
+          {% if report.status == 'pending_convener_accept' %}
+          <label id="lbl-request_final_report" style="display:flex;align-items:center;gap:10px;font-size:0.95rem;font-weight:400;color:var(--text);text-transform:none;letter-spacing:0;cursor:pointer;padding:10px 14px;border:1.5px solid var(--border2);border-radius:8px;transition:border 0.2s;">
+            <input type="radio" name="final_decision" value="request_final_report" onchange="highlight(this)" style="width:auto;margin:0;" checked>
+            <i class="bi bi-file-earmark-arrow-up" style="font-size:1.2rem;color:#0f6e56;"></i>
+            <div>
+              <div style="font-weight:500;">Request Final Report from Author</div>
+              <div style="font-size:0.8rem;color:var(--text3);">Ask author to submit the final version. Then you'll send to Head.</div>
+            </div>
+          </label>
+          {% endif %}
+
+          <label id="lbl-revision_required" style="display:flex;align-items:center;gap:10px;font-size:0.95rem;font-weight:400;color:var(--text);text-transform:none;letter-spacing:0;cursor:pointer;padding:10px 14px;border:1.5px solid var(--border2);border-radius:8px;transition:border 0.2s;">
+            <input type="radio" name="final_decision" value="revision_required" onchange="highlight(this)" style="width:auto;margin:0;">
+            <i class="bi bi-pencil-square" style="font-size:1.2rem;color:#b36000;"></i>
+            <div>
+              <div style="font-weight:500;">Override — Revision Required</div>
+              <div style="font-size:0.8rem;color:var(--text3);">Override reviewer; ask author to revise and resubmit</div>
+            </div>
+          </label>
+
+          <label id="lbl-rejected" style="display:flex;align-items:center;gap:10px;font-size:0.95rem;font-weight:400;color:var(--text);text-transform:none;letter-spacing:0;cursor:pointer;padding:10px 14px;border:1.5px solid var(--border2);border-radius:8px;transition:border 0.2s;">
+            <input type="radio" name="final_decision" value="rejected" onchange="highlight(this)" style="width:auto;margin:0;"
+              {% if report.status == 'pending_convener_reject' %}checked{% endif %}>
+            <i class="bi bi-x-circle-fill" style="font-size:1.2rem;color:#a31515;"></i>
+            <div>
+              <div style="font-weight:500;">Reject</div>
+              <div style="font-size:0.8rem;color:var(--text3);">Paper does not meet standards</div>
+            </div>
+          </label>
+
+        </div>
+      </div>
+
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;font-size:0.84rem;color:#7a5c00;margin-bottom:1.25rem;">
+        <i class="bi bi-exclamation-triangle-fill"></i> This action cannot be undone. The author will be notified accordingly.
+      </div>
+
+      <div style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-teal">Confirm Action</button>
+        <a href="{% url 'convener_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('input[name="final_decision"]').forEach(function(r) {
+    if (r.checked) highlight(r);
+  });
+});
+function highlight(radio) {
+  ['request_final_report','revision_required','rejected'].forEach(function(v) {
+    var lbl = document.getElementById('lbl-' + v);
+    if (lbl) lbl.style.borderColor = 'var(--border2)';
+  });
+  var lbl = document.getElementById('lbl-' + radio.value);
+  if (lbl) {
+    var colors = { request_final_report: '#0f6e56', revision_required: 'var(--amber)', rejected: 'var(--red)' };
+    lbl.style.borderColor = colors[radio.value] || 'var(--accent)';
+  }
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

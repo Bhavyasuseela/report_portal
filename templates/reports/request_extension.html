@@ -1,0 +1,124 @@
+{% extends 'base.html' %}
+{% block title %}Request Extension — ReportPortal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'author_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">Request Deadline Extension</h1>
+  <p>Submit a request to the convener if you need more time or are facing issues resubmitting your revised paper.</p>
+</div>
+
+<div style="max-width:700px;">
+
+  <!-- Report Info -->
+  <div class="card" style="margin-bottom:1.5rem;">
+    <div class="card-title">Report Details</div>
+    <div style="display:flex;flex-direction:column;gap:0.75rem;">
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Title</div>
+        <div style="font-weight:500;">{{ report.title }}</div>
+      </div>
+      {% if report.submission_deadline %}
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Current Deadline</div>
+        <div style="color:var(--coral);font-weight:600;"><i class="bi bi-clock"></i> {{ report.submission_deadline|date:"d M Y" }}</div>
+      </div>
+      {% endif %}
+      {% if report.extension_requested and not report.extension_granted %}
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 14px;color:#7a5c00;font-size:0.9rem;">
+        <i class="bi bi-hourglass-split"></i> <strong>Extension request already submitted.</strong> Please wait for the convener to respond.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if not report.extension_requested or report.extension_granted %}
+  <div class="card">
+    <div class="card-title">Extension / Issue Request</div>
+
+    <!-- Issue type selector -->
+    <div style="margin-bottom:1.25rem;">
+      <label style="font-size:0.85rem;font-weight:600;color:var(--text2);display:block;margin-bottom:0.5rem;">What type of request is this? <span style="color:var(--coral);">*</span></label>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.88rem;background:#f5f5f5;padding:8px 14px;border-radius:8px;border:2px solid transparent;" id="lbl-time">
+          <input type="radio" name="issue_type_radio" value="time" id="r-time" checked onchange="updateLabel()"> Need more time
+        </label>
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.88rem;background:#f5f5f5;padding:8px 14px;border-radius:8px;border:2px solid transparent;" id="lbl-issue">
+          <input type="radio" name="issue_type_radio" value="issue" id="r-issue" onchange="updateLabel()"> Technical / document issue
+        </label>
+        <label style="display:flex;align-items:center;gap:0.4rem;cursor:pointer;font-size:0.88rem;background:#f5f5f5;padding:8px 14px;border-radius:8px;border:2px solid transparent;" id="lbl-other">
+          <input type="radio" name="issue_type_radio" value="other" id="r-other" onchange="updateLabel()"> Other reason
+        </label>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="issue_type" id="issue_type_hidden" value="Need more time">
+      <div class="form-group">
+        <label for="extension_reason" id="reason_label">Reason for Extension <span style="color:var(--coral);">*</span></label>
+        <textarea id="extension_reason" name="extension_reason" rows="5" required
+          placeholder="Explain why you need more time — e.g., illness, data collection delays, issues with revised document format, upload problems..."></textarea>
+        <div class="form-hint">Be specific. The convener will use this to decide whether to grant the extension.</div>
+      </div>
+      <div style="background:var(--accent-light);border-radius:8px;padding:10px 14px;margin-bottom:1.25rem;font-size:0.85rem;color:var(--accent);">
+        <i class="bi bi-info-circle"></i> Once submitted, the convener will be notified and will grant or deny the extension. You will receive an email with their decision.
+      </div>
+      <div style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-accent">Submit Request</button>
+        <a href="{% url 'author_dashboard' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+  {% endif %}
+
+</div>
+
+<script>
+function updateLabel() {
+  const v = document.querySelector('input[name="issue_type_radio"]:checked').value;
+  const labels = {
+    time: 'Need more time',
+    issue: 'Having a technical or document issue',
+    other: 'Other reason'
+  };
+  const placeholders = {
+    time: 'Explain why you need more time — e.g., travel, illness, additional data needed...',
+    issue: 'Describe the issue you are facing — e.g., file upload errors, formatting problems, access issues...',
+    other: 'Provide details about why you are requesting an extension...'
+  };
+  const reasonLabels = {
+    time: 'Reason for Extension',
+    issue: 'Describe the Issue',
+    other: 'Reason / Details'
+  };
+  document.getElementById('issue_type_hidden').value = labels[v];
+  document.getElementById('extension_reason').placeholder = placeholders[v];
+  document.getElementById('reason_label').innerHTML = reasonLabels[v] + ' <span style="color:var(--coral);">*</span>';
+
+  // Highlight selected radio label
+  ['time','issue','other'].forEach(function(k) {
+    const lbl = document.getElementById('lbl-' + k);
+    lbl.style.borderColor = (k === v) ? 'var(--accent)' : 'transparent';
+    lbl.style.background = (k === v) ? 'var(--accent-light)' : '#f5f5f5';
+  });
+}
+updateLabel();
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

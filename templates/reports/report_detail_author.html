@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}{{ report.title }} — ReportPortal{% endblock %}
+{% block content %}
+<div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;">
+  <div>
+    <a href="{% url 'author_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to My Reports</a>
+    <h1 style="margin-top:0.5rem;">{{ report.title }}</h1>
+    <p>{{ report.get_report_type_display }} &middot; Submitted {{ report.submitted_at|date:"d M Y" }}</p>
+  </div>
+  <div>
+    {% if report.status == 'submitted' %}<span class="badge badge-blue" style="font-size:0.9rem;padding:6px 16px;"><span class="badge-dot"></span>Submitted</span>
+    {% elif report.status == 'under_review' %}<span class="badge badge-amber" style="font-size:0.9rem;padding:6px 16px;"><span class="badge-dot"></span>Under Review</span>
+    {% elif report.status == 'accepted' %}<span class="badge badge-green" style="font-size:0.9rem;padding:6px 16px;"><span class="badge-dot"></span>Accepted</span>
+    {% elif report.status == 'revision_required' %}<span class="badge badge-coral" style="font-size:0.9rem;padding:6px 16px;"><span class="badge-dot"></span>Revision Required</span>
+    {% elif report.status == 'resubmitted' %}<span class="badge" style="background:#f3e8fb;color:#7b35a3;font-size:0.9rem;padding:6px 16px;"><span class="badge-dot"></span>Resubmitted</span>
+    {% elif report.status == 'awaiting_final_report' %}<span class="badge" style="background:#e8f0fb;color:#1e3f66;font-size:0.9rem;padding:6px 16px;"><span class="badge-dot" style="background:#1e3f66;"></span>Awaiting Final Report</span>
+    {% elif report.status == 'final_report_submitted' %}<span class="badge" style="background:#e1f5ee;color:#0f6e56;font-size:0.9rem;padding:6px 16px;"><span class="badge-dot" style="background:#0f6e56;"></span>Final Report Submitted</span>
+    {% elif report.status == 'pending_head_approval' %}<span class="badge" style="background:#e8f0fb;color:#1e3f66;font-size:0.9rem;padding:6px 16px;"><span class="badge-dot" style="background:#1e3f66;"></span>Pending Head Approval</span>
+    {% elif report.status == 'rejected' %}<span class="badge badge-red" style="font-size:0.9rem;padding:6px 16px;"><span class="badge-dot"></span>Rejected</span>
+    {% endif %}
+  </div>
+</div>
+
+<div style="display:grid;grid-template-columns:2fr 1fr;gap:1.5rem;align-items:start;">
+
+  <!-- Main Info -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+    <div class="card">
+      <div class="card-title">Report Details</div>
+      <table style="width:100%;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:0.75rem 0;font-size:0.82rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;width:160px;">Author Name</td>
+          <td style="padding:0.75rem 0;font-size:0.9rem;">{{ report.author_name }}</td>
+        </tr>
+        {% if report.contributors %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:0.75rem 0;font-size:0.82rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Contributors</td>
+          <td style="padding:0.75rem 0;font-size:0.9rem;">{{ report.contributors }}</td>
+        </tr>
+        {% endif %}
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:0.75rem 0;font-size:0.82rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Report Type</td>
+          <td style="padding:0.75rem 0;"><span class="badge badge-blue">{{ report.get_report_type_display }}</span></td>
+        </tr>
+        <tr style="border-bottom:1px solid var(--border);">
+          <td style="padding:0.75rem 0;font-size:0.82rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Keywords</td>
+          <td style="padding:0.75rem 0;font-size:0.9rem;">{{ report.keywords }}</td>
+        </tr>
+        <tr>
+          <td style="padding:0.75rem 0;font-size:0.82rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Submitted</td>
+          <td style="padding:0.75rem 0;font-size:0.9rem;">{{ report.submitted_at|date:"d M Y, H:i" }}</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Abstract</div>
+      <div class="abstract-box">{{ report.abstract }}</div>
+    </div>
+
+    <!-- Current reviewer feedback (Req 2) -->
+    {% if report.reviewer_feedback %}
+    <div class="card" style="border-left:4px solid var(--teal);">
+      <div class="card-title" style="color:var(--teal);"><i class="bi bi-chat-left-text"></i> Latest Reviewer Feedback</div>
+      {% if report.reviewed_at %}<div style="font-size:0.8rem;color:var(--text3);margin-bottom:0.5rem;">Submitted: {{ report.reviewed_at|date:"d M Y, H:i" }}</div>{% endif %}
+      <div class="abstract-box">{{ report.reviewer_feedback }}</div>
+      {% if report.reviewer_attachment %}
+      <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);">
+        <a href="{% encrypted_file_url report.reviewer_attachment %}" target="_blank" class="btn btn-outline btn-sm"><i class="bi bi-paperclip"></i> Reviewer Attachment</a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Resubmission History Timeline (Req 3) -->
+    {% if resubmission_history %}
+    <div class="card" style="border-left:4px solid #7b35a3;">
+      <div class="card-title" style="color:#7b35a3;"><i class="bi bi-clock-history"></i> Resubmission History ({{ report.resubmission_count }} total)</div>
+      <div style="position:relative;">
+        <!-- Original submission entry -->
+        <div style="display:flex;gap:0.75rem;margin-bottom:1rem;">
+          <div style="display:flex;flex-direction:column;align-items:center;min-width:28px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#e8f0fb;border:2px solid #b8c8f0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#1e3f66;">0</div>
+            <div style="width:2px;flex:1;background:#e2c7f7;margin-top:4px;"></div>
+          </div>
+          <div style="flex:1;padding-bottom:1rem;">
+            <div style="font-size:0.82rem;font-weight:600;color:#1e3f66;">Original Submission</div>
+            <div style="font-size:0.77rem;color:var(--text3);">{{ report.submitted_at|date:"d M Y, H:i" }}</div>
+            <div style="margin-top:0.4rem;">
+              <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.78rem;"><i class="bi bi-file-earmark-text"></i> Original Paper</a>
+            </div>
+          </div>
+        </div>
+        {% for hist in resubmission_history %}
+        <div style="display:flex;gap:0.75rem;margin-bottom:0.5rem;">
+          <div style="display:flex;flex-direction:column;align-items:center;min-width:28px;">
+            <div style="width:28px;height:28px;border-radius:50%;background:#f3e8fb;border:2px solid #d9b8f0;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#7b35a3;">{{ hist.submission_number }}</div>
+            {% if not forloop.last %}<div style="width:2px;flex:1;background:#e2c7f7;margin-top:4px;"></div>{% endif %}
+          </div>
+          <div style="flex:1;padding-bottom:{% if forloop.last %}0{% else %}1rem{% endif %};">
+            <div style="font-size:0.82rem;font-weight:600;color:#7b35a3;">Resubmission #{{ hist.submission_number }}</div>
+            <div style="font-size:0.77rem;color:var(--text3);">{{ hist.submitted_at|date:"d M Y, H:i" }}</div>
+            {% if hist.revision_notes %}
+            <div style="font-size:0.82rem;color:var(--text2);margin-top:0.4rem;background:#f8f0ff;border-radius:6px;padding:0.4rem 0.6rem;">{{ hist.revision_notes }}</div>
+            {% endif %}
+            <div style="margin-top:0.4rem;">
+              <a href="{% encrypted_file_url hist.paper_doc %}" target="_blank" class="btn btn-sm" style="background:#f3e8fb;color:#7b35a3;border:1px solid #d9b8f0;font-size:0.78rem;"><i class="bi bi-file-earmark-text"></i> Resubmitted Paper</a>
+            </div>
+            {% if hist.reviewer_feedback %}
+            <div style="background:#f0f6ff;border-radius:6px;padding:0.6rem 0.75rem;margin-top:0.6rem;border-left:3px solid var(--accent);">
+              <div style="font-size:0.7rem;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:3px;">
+                Reviewer Feedback
+                {% if hist.reviewer_decision %}·
+                  {% if hist.reviewer_decision == 'accepted' %}<span style="color:green;">Accepted</span>
+                  {% elif hist.reviewer_decision == 'revision_required' %}<span style="color:#e67e00;">Revision Required</span>
+                  {% elif hist.reviewer_decision == 'rejected' %}<span style="color:red;">Rejected</span>
+                  {% endif %}
+                {% endif %}
+              </div>
+              {% if hist.reviewed_at %}<div style="font-size:0.72rem;color:var(--text3);margin-bottom:4px;">{{ hist.reviewed_at|date:"d M Y, H:i" }}</div>{% endif %}
+              <div style="font-size:0.83rem;color:var(--text2);">{{ hist.reviewer_feedback }}</div>
+              {% if hist.reviewer_attachment %}
+              <div style="margin-top:0.4rem;">
+                <a href="{% encrypted_file_url hist.reviewer_attachment %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.77rem;"><i class="bi bi-paperclip"></i> Reviewer Attachment</a>
+              </div>
+              {% endif %}
+            </div>
+            {% else %}
+            <div style="font-size:0.77rem;color:var(--text3);margin-top:0.4rem;"><i class="bi bi-hourglass"></i> Awaiting reviewer feedback</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% elif report.revision_notes %}
+    <div class="card" style="border-left:4px solid #7b35a3;">
+      <div class="card-title" style="color:#7b35a3;">Your Revision Notes</div>
+      <div class="abstract-box">{{ report.revision_notes }}</div>
+      {% if report.last_resubmitted_at %}
+      <div style="font-size:0.8rem;color:var(--text3);margin-top:0.75rem;">Resubmitted on {{ report.last_resubmitted_at|date:"d M Y" }}</div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Side panel -->
+  <div style="display:flex;flex-direction:column;gap:1.5rem;">
+    {% if report.status == 'accepted' %}
+    <div class="card" style="background:var(--teal-light);border-color:#a8dcc8;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.5rem;">
+        <span style="font-size:1.5rem;"><i class="bi bi-trophy"></i></span>
+        <strong style="color:var(--teal);">Congratulations!</strong>
+      </div>
+      <p style="font-size:0.9rem;color:#0a4e3d;">Your report has been accepted. It will be added to the NCMRWF publication repository by the Convener.</p>
+    </div>
+    {% elif report.status == 'awaiting_final_report' %}
+    <div class="card" style="background:#e8f0fb;border-color:#b8d0f0;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.75rem;">
+        <span style="font-size:1.4rem;"><i class="bi bi-file-earmark-arrow-up"></i></span>
+        <strong style="color:#1e3f66;">Final Report Required</strong>
+      </div>
+      <p style="font-size:0.9rem;color:#1e3f66;margin-bottom:1rem;">Your paper has been recommended for acceptance. Please submit the final version.</p>
+      <a href="{% url 'submit_final_report' report.id %}" class="btn btn-teal" style="width:100%;justify-content:center;"><i class="bi bi-upload"></i> Submit Final Report</a>
+    </div>
+    {% elif report.status == 'final_report_submitted' %}
+    <div class="card" style="background:#e1f5ee;border-color:#a8dcc8;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.5rem;">
+        <span style="font-size:1.4rem;"><i class="bi bi-check-circle-fill"></i></span>
+        <strong style="color:#0f6e56;">Final Report Submitted</strong>
+      </div>
+      <p style="font-size:0.9rem;color:#0a4e3d;">Your final report has been received. The convener will forward it to the Head for approval.</p>
+      {% if report.final_report_submitted_at %}<p style="font-size:0.8rem;color:#0f6e56;">Submitted: {{ report.final_report_submitted_at|date:"d M Y, H:i" }}</p>{% endif %}
+    </div>
+    {% elif report.status == 'pending_head_approval' %}
+    <div class="card" style="background:#e8f0fb;border-color:#b8d0f0;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.5rem;">
+        <span style="font-size:1.4rem;"><i class="bi bi-person-badge"></i></span>
+        <strong style="color:#1e3f66;">Pending Head Approval</strong>
+      </div>
+      <p style="font-size:0.9rem;color:#1e3f66;">Your final report has been forwarded to the Head for review.</p>
+    </div>
+    {% elif report.status == 'revision_required' %}
+    <div class="card" style="background:var(--coral-light);border-color:#f0c0b0;">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:0.75rem;">
+        <span style="font-size:1.4rem;"><i class="bi bi-pencil-square"></i></span>
+        <strong style="color:var(--coral);">Revision Required</strong>
+      </div>
+      <p style="font-size:0.9rem;color:#7a2d10;margin-bottom:1rem;">Please review the feedback and resubmit your revised paper.</p>
+      <a href="{% url 'resubmit_report' report.id %}" class="btn btn-teal" style="width:100%;justify-content:center;">Resubmit Paper</a>
+    </div>
+    {% endif %}
+
+    <div class="card">
+      <div class="card-title">Documents</div>
+      {% if report.final_report_doc %}
+      <div style="margin-bottom:0.75rem;">
+        <div style="font-size:0.8rem;color:#0f6e56;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;font-weight:700;">✅ Final Report</div>
+        <a href="{% encrypted_file_url report.final_report_doc %}" target="_blank" class="btn btn-sm" style="background:#e1f5ee;color:#0f6e56;border:1px solid #a8dcc8;width:100%;justify-content:center;"><i class="bi bi-file-earmark-check-fill"></i> View Final Report</a>
+        {% if report.final_report_submitted_at %}<div style="font-size:0.75rem;color:var(--text3);margin-top:4px;">Submitted: {{ report.final_report_submitted_at|date:"d M Y, H:i" }}</div>{% endif %}
+      </div>
+      {% endif %}
+      {% if report.paper_doc %}
+      <div style="margin-bottom:0.75rem;">
+        <div style="font-size:0.8rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Original Paper</div>
+        <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;"><i class="bi bi-file-earmark-text"></i> View Paper</a>
+      </div>
+      {% endif %}
+      {% if report.plagiarism_doc %}
+      <div style="margin-bottom:0.75rem;">
+        <div style="font-size:0.8rem;color:var(--text2);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Plagiarism Report</div>
+        <a href="{% encrypted_file_url report.plagiarism_doc %}" target="_blank" class="btn btn-outline btn-sm" style="width:100%;justify-content:center;"><i class="bi bi-file-earmark-text"></i> View Report</a>
+      </div>
+      {% endif %}
+      {% if report.resubmitted_paper_doc %}
+      <div style="margin-bottom:0.75rem;">
+        <div style="font-size:0.8rem;color:#7b35a3;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;">Resubmitted Paper</div>
+        <a href="{% encrypted_file_url report.resubmitted_paper_doc %}" target="_blank" class="btn btn-sm" style="background:#f3e8fb;color:#7b35a3;border:1px solid #d9b8f0;width:100%;justify-content:center;"><i class="bi bi-file-earmark-text"></i> View Resubmission</a>
+      </div>
+      {% endif %}
+      <!-- All Reviewer Attachments (accumulated, never replaced) -->
+      {% if reviewer_attachments_all %}
+      <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid var(--border);">
+        <div style="font-size:0.8rem;color:var(--teal);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;font-weight:700;"><i class="bi bi-paperclip"></i> Reviewer Attachments</div>
+        {% for att in reviewer_attachments_all %}
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f0f0f0;">
+          <div>
+            <div style="font-size:0.78rem;font-weight:600;color:var(--text2);">
+              {% if att.resubmission_number == 0 %}Original Review{% else %}Resubmission #{{ att.resubmission_number }}{% endif %}
+            </div>
+            <div style="font-size:0.72rem;color:var(--text3);">{{ att.submitted_at|date:"d M Y, H:i" }}</div>
+          </div>
+          <a href="{% encrypted_file_url att.attachment %}" target="_blank" class="btn btn-outline btn-sm" style="font-size:0.75rem;"><i class="bi bi-download"></i> Download</a>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Report Timeline</div>
+      <div style="font-size:0.87rem;color:var(--text2);">
+        <div style="margin-bottom:0.4rem;"><i class="bi bi-calendar"></i> Submitted: {{ report.submitted_at|date:"d M Y" }}</div>
+        {% if report.resubmission_count > 0 %}
+        <div style="color:#7b35a3;margin-bottom:0.4rem;"><i class="bi bi-arrow-repeat"></i> {{ report.resubmission_count }} resubmission{{ report.resubmission_count|pluralize }}</div>
+        {% if report.last_resubmitted_at %}
+        <div style="font-size:0.82rem;color:var(--text3);margin-bottom:0.4rem;">Last resubmitted: {{ report.last_resubmitted_at|date:"d M Y" }}</div>
+        {% endif %}
+        {% endif %}
+        {% if report.final_report_submitted_at %}
+        <div style="color:#0f6e56;margin-bottom:0.4rem;"><i class="bi bi-file-earmark-check"></i> Final report: {{ report.final_report_submitted_at|date:"d M Y" }}</div>
+        {% endif %}
+        {% if report.sent_to_head_at %}
+        <div style="color:#1e3f66;margin-bottom:0.4rem;"><i class="bi bi-person-badge"></i> Sent to Head: {{ report.sent_to_head_at|date:"d M Y" }}</div>
+        {% endif %}
+        {% if report.head_decision_at %}
+        <div style="color:#0f6e56;"><i class="bi bi-check-circle"></i> Head decision: {{ report.head_decision_at|date:"d M Y" }}</div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

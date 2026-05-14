@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Assign Reviewer — Internal Report Submission Portal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <a href="{% url 'convener_dashboard' %}" style="font-size:0.85rem;color:var(--text3);">← Back to dashboard</a>
+  <h1 style="margin-top:0.5rem;">
+    {% if report.status == 'resubmitted' %}Reassign Reviewer{% else %}Assign Reviewer{% endif %}
+  </h1>
+  <p>Select a reviewer and send them the {% if report.status == 'resubmitted' %}revised {% endif %}paper for evaluation.</p>
+</div>
+
+{% if already_assigned_by_other %}
+<div style="background:#fcebeb;border:1px solid #f7c1c1;border-left:4px solid #a32d2d;border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.5rem;max-width:900px;">
+  <strong style="color:#a32d2d;"><i class="bi bi-lock-fill"></i> Already Assigned by Another Convener</strong>
+  <p style="font-size:0.875rem;color:#7a1e1e;margin-top:4px;">
+    This report has already been assigned to a reviewer by <strong>{{ report.assigned_by_convener.full_name|default:report.assigned_by_convener.email }}</strong>.
+    The assign button is disabled to prevent duplicate assignments. Only the assigning convener can reassign this report.
+  </p>
+</div>
+{% endif %}
+
+{% if report.status == 'resubmitted' %}
+<div style="background:#f3e8fb;border:1px solid #d9b8f0;border-left:4px solid #7b35a3;border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:1.5rem;max-width:900px;">
+  <strong style="color:#7b35a3;"><i class="bi bi-arrow-repeat"></i> Resubmission #{{ report.resubmission_count }}</strong>
+  <p style="font-size:0.875rem;color:#5a2080;margin-top:4px;">The author has revised and resubmitted this paper. Please assign a reviewer to continue the review process. The revised paper is available below.</p>
+  {% if report.last_resubmitted_at %}<p style="font-size:0.8rem;color:#7b35a3;margin-top:4px;">Resubmitted on {{ report.last_resubmitted_at|date:"d M Y, H:i" }}</p>{% endif %}
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;max-width:900px;">
+
+  <!-- Report Summary -->
+  <div>
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="card-title">Report Summary</div>
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px;">Title</div>
+        <div style="font-weight:500;">{{ report.title }}</div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px;">Author</div>
+        <div>{{ report.author_name }}</div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px;">Type</div>
+        <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px;">Keywords</div>
+        <div style="font-size:0.9rem;color:var(--text2);">{{ report.keywords }}</div>
+      </div>
+      <div>
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:6px;">Abstract</div>
+        <div class="abstract-box">{{ report.abstract }}</div>
+      </div>
+    </div>
+
+    <!-- Documents -->
+    <div class="card">
+      <div class="card-title">Documents</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        {% if report.resubmitted_paper_doc %}
+        <a href="{% encrypted_file_url report.resubmitted_paper_doc %}" target="_blank" class="btn" style="justify-content:center;background:#f3e8fb;color:#7b35a3;border:1px solid #d9b8f0;"><i class="bi bi-arrow-repeat"></i> Download Revised Paper</a>
+        {% endif %}
+        {% if report.paper_doc %}
+        <a href="{% encrypted_file_url report.paper_doc %}" target="_blank" class="btn btn-outline" style="justify-content:center;"><i class="bi bi-file-earmark-text"></i> {% if report.resubmitted_paper_doc %}Download Original{% else %}Download Paper{% endif %}</a>
+        {% endif %}
+      </div>
+      {% if report.revision_notes %}
+      <div style="margin-top:1rem;">
+        <div style="font-size:0.78rem;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:6px;">Author's Revision Notes</div>
+        <div class="abstract-box" style="border-left-color:#7b35a3;font-size:0.85rem;">{{ report.revision_notes }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Assignment Form -->
+  <div class="card">
+    <div class="card-title">Select Reviewer</div>
+    <form method="post">
+      {% csrf_token %}
+
+      {% if report.assigned_reviewer %}
+      <div style="background:var(--accent-light);border-radius:8px;padding:10px 14px;margin-bottom:1.25rem;font-size:0.85rem;color:var(--accent);">
+        Currently assigned to: <strong>{{ report.assigned_reviewer.full_name|default:report.assigned_reviewer.email }}</strong>
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label>Choose Reviewer <span style="color:var(--red);">*</span></label>
+        {% if reviewers %}
+
+        <!-- Hidden input that actually submits the reviewer id -->
+        <input type="hidden" name="reviewer_id" id="reviewer-id-input">
+
+        <!-- Custom live-search box -->
+        <div style="position:relative;" id="reviewer-autocomplete">
+          <input
+            type="text"
+            id="reviewer-search"
+            placeholder="Type name or email to search…"
+            autocomplete="off"
+            style="width:100%;box-sizing:border-box;"
+            oninput="onReviewerSearch(this.value)"
+            onfocus="onReviewerSearch(this.value)"
+          >
+          <!-- Dropdown list -->
+          <div id="reviewer-dropdown" style="
+            display:none;
+            position:absolute;
+            top:100%;left:0;right:0;
+            background:#fff;
+            border:1px solid #c8d6e8;
+            border-top:none;
+            border-radius:0 0 8px 8px;
+            max-height:220px;
+            overflow-y:auto;
+            z-index:999;
+            box-shadow:0 4px 12px rgba(0,0,0,0.1);
+          "></div>
+        </div>
+
+        <!-- Stores all reviewers as JS data -->
+        <script>
+        const REVIEWERS = [
+          {% for reviewer in reviewers %}
+            {
+              id: "{{ reviewer.id }}",
+              name: "{{ reviewer.full_name|default:reviewer.email }}",
+              email: "{{ reviewer.email }}",
+              disabled: {% if reviewer.email == current_convener_email %}true{% else %}false{% endif %},
+              selected: {% if report.assigned_reviewer == reviewer %}true{% else %}false{% endif %}
+            },
+          {% endfor %}
+        ];
+
+        // Pre-fill if already assigned
+        (function() {
+          const pre = REVIEWERS.find(r => r.selected && !r.disabled);
+          if (pre) {
+            document.getElementById('reviewer-search').value = pre.name + ' — ' + pre.email;
+            document.getElementById('reviewer-id-input').value = pre.id;
+          }
+        })();
+
+        function onReviewerSearch(query) {
+          const dropdown = document.getElementById('reviewer-dropdown');
+          const q = query.toLowerCase().trim();
+          const matches = REVIEWERS.filter(r => {
+            if (r.disabled) return false;
+            return !q || r.name.toLowerCase().includes(q) || r.email.toLowerCase().includes(q);
+          });
+
+          if (matches.length === 0) {
+            dropdown.innerHTML = '<div style="padding:10px 14px;color:#999;font-size:0.875rem;">No reviewers found</div>';
+          } else {
+            dropdown.innerHTML = matches.map(r => `
+              <div
+                class="reviewer-option"
+                data-id="${r.id}"
+                data-label="${r.name} — ${r.email}"
+                onclick="selectReviewer('${r.id}', '${r.name} — ${r.email}')"
+                style="padding:10px 14px;cursor:pointer;font-size:0.875rem;border-bottom:1px solid #f0f0f0;"
+                onmouseover="this.style.background='#f0f6ff'"
+                onmouseout="this.style.background=''"
+              >
+                <span style="font-weight:500;">${r.name}</span>
+                <span style="color:#888;margin-left:6px;">${r.email}</span>
+              </div>
+            `).join('');
+          }
+          dropdown.style.display = 'block';
+        }
+
+        function selectReviewer(id, label) {
+          document.getElementById('reviewer-search').value = label;
+          document.getElementById('reviewer-id-input').value = id;
+          document.getElementById('reviewer-dropdown').style.display = 'none';
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+          if (!document.getElementById('reviewer-autocomplete').contains(e.target)) {
+            document.getElementById('reviewer-dropdown').style.display = 'none';
+          }
+        });
+        </script>
+
+        {% else %}
+        <div style="padding:12px;background:var(--red-light);border-radius:8px;color:var(--red);font-size:0.875rem;">
+          No reviewers found. Please add reviewer accounts from the admin panel first.
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="form-group">
+        <label>Notes for Reviewer</label>
+        <textarea name="convener_notes" rows="4" placeholder="Add any specific instructions or notes for the reviewer...">{{ report.convener_notes }}</textarea>
+        <div class="form-hint">These notes will be included in the email to the reviewer.</div>
+      </div>
+
+      <div style="display:flex;gap:1rem;">
+        <button type="submit" class="btn btn-teal" id="assign-btn" {% if not reviewers or already_assigned_by_other %}disabled style="opacity:0.5;cursor:not-allowed;"{% endif %}>
+          {% if report.status == 'resubmitted' %}Reassign Reviewer →{% else %}Send to Reviewer →{% endif %}
+        </button>
+        <a href="{% url 'report_detail_convener' report.id %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script>
+// Disable assign button after form submit
+const assignForm = document.querySelector('form');
+if (assignForm) {
+  assignForm.addEventListener('submit', function(e) {
+    // Validate that a reviewer was actually selected
+    const reviewerId = document.getElementById('reviewer-id-input');
+    if (reviewerId && !reviewerId.value) {
+      e.preventDefault();
+      document.getElementById('reviewer-search').focus();
+      document.getElementById('reviewer-search').style.borderColor = 'var(--red)';
+      return;
+    }
+    const btn = document.getElementById('assign-btn');
+    if (btn && !btn.disabled) {
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.style.cursor = 'not-allowed';
+      btn.textContent = 'Sending…';
+    }
+  });
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block title %}Admin Login – Report Portal{% endblock %}
+{% block content %}
+<style>
+.login-wrap {
+  min-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+.login-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 420px;
+}
+.login-icon {
+  width: 64px; height: 64px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 1.2rem;
+  font-size: 1.8rem;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+.login-title {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: .3rem;
+}
+.login-subtitle {
+  text-align: center;
+  color: var(--text2);
+  font-size: .88rem;
+  margin-bottom: 1.8rem;
+}
+.admin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  background: #1e293b;
+  color: #94a3b8;
+  font-size: .75rem;
+  font-weight: 600;
+  padding: .25rem .7rem;
+  border-radius: 20px;
+  margin: 0 auto .4rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.badge-row { text-align: center; margin-bottom: 1.5rem; }
+.form-group { margin-bottom: 1.1rem; }
+.form-group label {
+  display: block;
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--text2);
+  margin-bottom: .4rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.form-group input {
+  width: 100%;
+  padding: .65rem 1rem;
+  border: 1.5px solid var(--border2);
+  border-radius: 10px;
+  font-size: .95rem;
+  background: var(--surface2);
+  color: var(--text);
+  transition: border-color .2s;
+  box-sizing: border-box;
+}
+.form-group input:focus {
+  outline: none;
+  border-color: #334155;
+  background: var(--surface);
+}
+.btn-admin {
+  width: 100%;
+  padding: .75rem;
+  background: linear-gradient(135deg, #1e293b, #334155);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: .5rem;
+  transition: opacity .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+}
+.btn-admin:hover { opacity: .88; }
+.alert { padding: .8rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: .88rem; }
+.alert-error { background: var(--red-light); color: var(--red); }
+.alert-success { background: var(--green-light); color: var(--green); }
+.back-link {
+  text-align: center;
+  margin-top: 1.3rem;
+  font-size: .85rem;
+  color: var(--text2);
+}
+.back-link a { color: var(--accent); text-decoration: none; }
+.back-link a:hover { text-decoration: underline; }
+.security-note {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  font-size: .78rem;
+  color: var(--text2);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: .6rem .8rem;
+  margin-top: 1.2rem;
+}
+</style>
+
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="login-icon"><i class="bi bi-shield-lock-fill"></i></div>
+    <div class="badge-row">
+      <span class="admin-badge"><i class="bi bi-lock-fill"></i> Admin Access</span>
+    </div>
+    <div class="login-title">Administrator Login</div>
+    <div class="login-subtitle">Restricted portal — authorised personnel only</div>
+
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert {% if msg.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+          {{ msg }}
+        </div>
+      {% endfor %}
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-group">
+        <label>Admin Email</label>
+        <input type="email" name="email" placeholder="admin@example.com" required autofocus>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div style="position:relative;">
+          <input type="password" name="password" placeholder="••••••••" required id="admin-pwd" style="padding-right:44px;">
+          <button type="button" onclick="toggleAdminPwd()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#9c9890;font-size:1.1rem;padding:0;">
+            <i class="bi bi-eye" id="admin-eye"></i>
+          </button>
+        </div>
+      </div>
+      <button type="submit" class="btn-admin">
+        <i class="bi bi-shield-check"></i> Login as Admin
+      </button>
+    </form>
+
+    <div class="security-note">
+      <i class="bi bi-info-circle"></i>
+      An OTP will be sent to your registered email to verify your identity.
+    </div>
+
+    <div class="back-link">
+      <a href="{% url 'login' %}"><i class="bi bi-arrow-left"></i> Back to portal home</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

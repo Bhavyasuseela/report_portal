@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load report_extras %}
+{% block title %}Librarian Dashboard — ReportPortal{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Library Repository</h1>
+  <p>Browse and manage final approved publications forwarded by the Head. All publication details required for DOI assignment are shown below.</p>
+</div>
+
+<div class="stat-grid">
+  <div class="stat-card green" style="border-top:3px solid var(--green);">
+    <div class="stat-num">{{ stats.total_accepted }}</div>
+    <div class="stat-label">Total Publications</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid var(--accent);">
+    <div class="stat-num">{{ stats.technical }}</div>
+    <div class="stat-label">Technical Reports</div>
+  </div>
+  <div class="stat-card teal" style="border-top:3px solid var(--teal);">
+    <div class="stat-num">{{ stats.research }}</div>
+    <div class="stat-label">Research Reports</div>
+  </div>
+  <div class="stat-card" style="border-top:3px solid #e67e00;">
+    <div class="stat-num" style="color:#e67e00;">{{ stats.doi_pending }}</div>
+    <div class="stat-label">DOI Pending</div>
+  </div>
+  <div class="stat-card amber" style="border-top:3px solid var(--amber);">
+    <div class="stat-num">{{ stats.verification }}</div>
+    <div class="stat-label">Verification Reports</div>
+  </div>
+</div>
+
+<!-- Filter bar -->
+<form method="get" class="filter-bar">
+  <select name="type" onchange="this.form.submit()">
+    <option value="">All Types</option>
+    <option value="technical" {% if request.GET.type == 'technical' %}selected{% endif %}>Technical</option>
+    <option value="research" {% if request.GET.type == 'research' %}selected{% endif %}>Research</option>
+    <option value="verification" {% if request.GET.type == 'verification' %}selected{% endif %}>Verification</option>
+  </select>
+  {% if request.GET.type %}
+  <a href="{% url 'librarian_dashboard' %}" class="btn btn-outline btn-sm">Clear filter</a>
+  {% endif %}
+</form>
+
+{% if reports %}
+{% for report in reports %}
+<div class="card" style="margin-bottom:1.5rem;">
+
+  <!-- Header row: title + type + DOI action -->
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap;margin-bottom:1rem;">
+    <div style="flex:1;">
+      <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;">
+        <span class="badge badge-blue">{{ report.get_report_type_display }}</span>
+        {% if report.doi %}
+        <span class="badge badge-green" style="font-size:0.75rem;">DOI Assigned</span>
+        {% else %}
+        <span class="badge" style="background:#fff3e0;color:#e67e00;font-size:0.75rem;">DOI Pending</span>
+        {% endif %}
+      </div>
+      <h3 style="margin:0.4rem 0 0.2rem;font-size:1.05rem;line-height:1.4;">{{ report.title }}</h3>
+      <div style="font-size:0.85rem;color:var(--text3);">Added to library: {{ report.sent_to_library_at|date:"d M Y" }}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+      {% if not report.doi %}
+      <a href="{% url 'assign_doi' report.id %}" class="btn btn-sm" style="background:#e67e00;color:white;white-space:nowrap;">
+        <i class="bi bi-upc-scan"></i> Assign DOI &amp; Series No.
+      </a>
+      {% endif %}
+      {% if report.final_report_doc %}
+      <a href="{% encrypted_file_url report.final_report_doc %}" download class="btn btn-sm" style="background:#0f6e56;color:white;white-space:nowrap;">
+        <i class="bi bi-file-earmark-arrow-down"></i> Final Report
+      </a>
+      {% elif report.resubmitted_paper_doc %}
+      <a href="{% encrypted_file_url report.resubmitted_paper_doc %}" download class="btn btn-sm" style="background:#0f6e56;color:white;white-space:nowrap;">
+        <i class="bi bi-file-earmark-arrow-down"></i> Revised Paper
+      </a>
+      {% elif report.paper_doc %}
+      <a href="{% encrypted_file_url report.paper_doc %}" download class="btn btn-sm" style="background:#0f6e56;color:white;white-space:nowrap;">
+        <i class="bi bi-file-earmark-arrow-down"></i> Paper
+      </a>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Publication Details Grid (visible to librarian for publication) -->
+  <div style="background:#f8faff;border:1px solid #d0ddf5;border-radius:8px;padding:1rem;margin-bottom:1rem;">
+    <div style="font-size:0.78rem;text-transform:uppercase;font-weight:700;color:#1e3f66;letter-spacing:0.06em;margin-bottom:0.75rem;">
+      <i class="bi bi-journal-bookmark"></i> Publication Details
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:0.75rem;">
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Publication Type</div>
+        <div style="font-size:0.9rem;font-weight:500;">{{ report.get_report_type_display }}</div>
+      </div>
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Author</div>
+        <div style="font-size:0.9rem;">{{ report.author_name }}</div>
+      </div>
+
+      {% if report.contributors %}
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Contributors</div>
+        <div style="font-size:0.88rem;color:var(--text2);">{{ report.contributors }}</div>
+      </div>
+      {% endif %}
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Series Title</div>
+        <div style="font-size:0.9rem;">{{ report.series_title|default:"—" }}</div>
+      </div>
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Series Number</div>
+        <div style="font-size:0.9rem;{% if not report.series_number %}color:var(--text3);font-style:italic;{% else %}font-weight:600;color:#1e3f66;{% endif %}">
+          {{ report.series_number|default:"To be assigned" }}
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">DOI</div>
+        <div style="font-size:0.9rem;{% if not report.doi %}color:var(--text3);font-style:italic;{% else %}font-weight:600;color:#1e3f66;{% endif %}">
+          {{ report.doi|default:"To be assigned" }}
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Year Published</div>
+        <div style="font-size:0.9rem;">{{ report.submitted_at|date:"Y" }}</div>
+      </div>
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Language</div>
+        <div style="font-size:0.9rem;">{{ report.language|default:"English" }}</div>
+      </div>
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Publisher</div>
+        <div style="font-size:0.9rem;">NCMRWF</div>
+      </div>
+
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">Keywords</div>
+        <div style="font-size:0.88rem;color:var(--text2);">{{ report.keywords }}</div>
+      </div>
+
+      {% if report.doi_assigned_by %}
+      <div>
+        <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:2px;">DOI Assigned By</div>
+        <div style="font-size:0.88rem;">{{ report.doi_assigned_by.full_name|default:report.doi_assigned_by.email }}</div>
+        <div style="font-size:0.75rem;color:var(--text3);">{{ report.doi_assigned_at|date:"d M Y" }}</div>
+      </div>
+      {% endif %}
+
+    </div>
+
+    {% if report.description %}
+    <div style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid #d0ddf5;">
+      <div style="font-size:0.72rem;color:var(--text3);text-transform:uppercase;font-weight:600;margin-bottom:4px;">Description</div>
+      <div style="font-size:0.88rem;color:var(--text2);line-height:1.6;">{{ report.description }}</div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Abstract collapsible -->
+  {% if report.abstract %}
+  <details>
+    <summary style="font-size:0.85rem;color:var(--accent);cursor:pointer;">View abstract</summary>
+    <div class="abstract-box" style="margin-top:8px;font-size:0.85rem;">{{ report.abstract }}</div>
+  </details>
+  {% endif %}
+
+</div>
+{% endfor %}
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon"><i class="bi bi-book" style="font-size:2.5rem;color:var(--text3);"></i></div>
+    <h3>No publications yet</h3>
+    <p>Papers approved by the Head and sent to the library will appear here.</p>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

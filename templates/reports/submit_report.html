@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% block title %}Submit Report — ReportPortal
+{% endblock %}
+{% block content %}
+<div class="page-header">
+  <h1>Submit a Report</h1>
+  <p>Fill in the details below and upload your documents.</p>
+</div>
+
+<div style="max-width:780px;">
+
+  <!-- SUBMISSION INSTRUCTIONS BOX -->
+  <div style="background:#e8f0fb;border:1px solid #b8d0f0;border-left:5px solid #2d5a8e;border-radius:var(--radius);padding:1.25rem 1.5rem;margin-bottom:1.75rem;">
+    <div style="font-weight:600;color:#1e3f66;font-size:1rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:8px;">
+      <i class="bi bi-info-circle-fill"></i> Submission Instructions
+    </div>
+    <ul style="margin:0;padding-left:1.25rem;color:#1e3f66;font-size:0.9rem;line-height:1.9;">
+      <li>Provide accurate author and contributor details. Contributors will receive email notifications.</li>
+      <li><strong>Plagiarism Report is required.</strong> Acceptable limits:
+        <ul style="margin-top:4px;">
+          <li><strong>Research Reports:</strong> less than 30%</li>
+          <li><strong>Technical Reports:</strong> less than 50%</li>
+        </ul>
+      </li>
+      <li>Upload your manuscript in PDF, DOC, or DOCX format (max 20 MB).</li>
+      <li>Ensure all co-authors and contributors are listed before submission.</li>
+    </ul>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <!-- REPORT INFORMATION -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Report Information</div>
+
+      <div class="form-group">
+        <label>Report Type <span style="color:var(--red);">*</span></label>
+        <select name="report_type" required>
+          <option value="">— Select type —</option>
+          <option value="technical">Technical Report</option>
+          <option value="verification">Verification Report</option>
+          <option value="research">Research Report</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Title <span style="color:var(--red);">*</span></label>
+        <input type="text" name="title" placeholder="Full title of your report" required>
+      </div>
+
+      <div class="form-group">
+        <label>Author Name <span style="color:var(--red);">*</span></label>
+        <input type="text" name="author_name" placeholder="Your full name" required>
+      </div>
+
+      <!-- Dynamic Contributors Section -->
+      <div class="form-group">
+        <label>Contributors</label>
+        <div id="contributors-list" style="display:flex;flex-direction:column;gap:8px;margin-bottom:8px;"></div>
+        <button type="button" onclick="addContributor()" class="btn btn-outline" style="font-size:0.85rem;padding:6px 14px;">
+          + Add Contributor
+        </button>
+        <div class="form-hint" style="margin-top:6px;">
+          Add the name and email for each contributor. They will be notified when the report is submitted.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Abstract <span style="color:var(--red);">*</span></label>
+        <textarea name="abstract" placeholder="Write a concise summary of your report (150–300 words)..." rows="6" required></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Keywords <span style="color:var(--red);">*</span></label>
+        <input type="text" name="keywords" placeholder="machine learning, data analysis, neural networks" required>
+        <div class="form-hint">Separate keywords with commas</div>
+      </div>
+    </div>
+
+    <!-- PUBLICATION DETAILS (DOI Template) -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title"><i class="bi bi-journal-bookmark"></i> Publication Details</div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ReportTitle</label>
+          <input type="text" name="series_title" placeholder="e.g. NCMRWF Technical Notes">
+        </div>
+        <div class="form-group">
+          <label>Report Number <span style="color:var(--text3);font-weight:400;">(assigned by Library)</span></label>
+          <input type="text" name="series_number" placeholder="Assigned by Library" disabled
+            style="background:#f5f5f5;color:var(--text3);cursor:not-allowed;">
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>DOI <span style="color:var(--text3);font-weight:400;">(assigned by Library)</span></label>
+          <input type="text" placeholder="Assigned by Library" disabled
+            style="background:#f5f5f5;color:var(--text3);cursor:not-allowed;">
+        </div>
+        <div class="form-group">
+          <label>Language</label>
+          <input type="text" name="language" placeholder="English" value="English">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Publisher</label>
+        <input type="text" value="NCMRWF" disabled style="background:#f5f5f5;color:var(--text3);cursor:not-allowed;">
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea name="description" placeholder="Brief description of the publication..." rows="3"></textarea>
+      </div>
+    </div>
+
+    <!-- UPLOAD DOCUMENTS -->
+    <div class="card" style="margin-bottom:1.5rem;">
+      <div class="card-title">Upload Documents</div>
+
+      <!-- Plagiarism reminder -->
+      <div style="background:#fff8e1;border:1px solid #ffe082;border-left:4px solid #f9a825;border-radius:8px;padding:10px 14px;margin-bottom:1.25rem;font-size:0.86rem;color:#6d4c00;">
+        <i class="bi bi-exclamation-triangle-fill" style="color:#f9a825;"></i>
+        <strong>Plagiarism Report Required.</strong> Acceptable limits: Research Reports &lt;30% | Technical Reports &lt;50%
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Paper Document <span style="color:var(--red);">*</span></label>
+          <input type="file" name="paper_doc" accept=".pdf,.doc,.docx" required>
+          <div class="form-hint">PDF, DOC or DOCX (max 20MB)</div>
+        </div>
+        <div class="form-group">
+          <label>Plagiarism Report <span style="color:var(--red);">*</span></label>
+          <input type="file" name="plagiarism_doc" accept=".pdf,.doc,.docx">
+          <div class="form-hint">Required — upload your plagiarism check report</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:1rem;align-items:center;">
+      <button type="submit" class="btn btn-teal" id="submit-btn">Submit Report →</button>
+      <a href="{% url 'author_dashboard' %}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+// Disable submit button after click to prevent duplicate submissions
+document.querySelector('form').addEventListener('submit', function() {
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.style.opacity = '0.6';
+  btn.style.cursor = 'not-allowed';
+  btn.textContent = 'Submitting…';
+});
+
+function addContributor() {
+  const list = document.getElementById('contributors-list');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:center;';
+  row.innerHTML =
+    '<input type="text"  name="contributor_name[]"  placeholder="Full name"     style="flex:1;margin:0;" />' +
+    '<input type="email" name="contributor_email[]" placeholder="Email address" style="flex:1;margin:0;" />' +
+    '<button type="button" onclick="this.parentElement.remove()" ' +
+      'style="background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--red);padding:0 4px;" title="Remove">&times;</button>';
+  list.appendChild(row);
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('form').forEach(function(form) {
+    form.addEventListener('submit', function() {
+      form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function(btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+        if (btn.tagName === 'BUTTON') {
+          btn.innerText = btn.innerText + ' (Submitting...)';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}
